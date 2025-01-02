@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Météo</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="christmas.css" />
+  </head>
+  <body>
+    <div id="snowflakes-container" class="snowflakes" aria-hidden="true">
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+    </div>
+
+    <span id="toggle-snowflakes">❆</span>
+
+    <div id="current-date"></div>
+
+    <div class="main-container">
+      <div class="participants">
+        <div id="participant-list"></div>
+        <div class="add-participant-container">
+          <form onsubmit="return false;">
+            <input type="text" id="new-participant" required placeholder="Ajouter un participant" />
+            <button type="submit" id="add-participant">+</button>
+          </form>
+        </div>
+        <div class="weather-container">
+          <iframe
+            id="widget_autocomplete_preview"
+            width="150"
+            height="300"
+            frameborder="0"
+            src="https://meteofrance.com/widget/prevision/060840##3D6AA2"
+            title="Prévisions Mouans-Sartoux par Météo-France"
+          >
+          </iframe>
+        </div>
+        <div class="admin-container">
+          <form onsubmit="return false;">
+            <input type="password" id="admin-password" placeholder="Mot de passe" />
+            <button type="submit" id="admin-login">Mode admin</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table id="mood-table">
+          <thead>
+            <tr id="columns-header"></tr>
+          </thead>
+          <tbody>
+            <tr id="columns-body"></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer-container">
+      <button id="reset" title="Vide le localStorage et reload la page">C'est full bug, help me !</button>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

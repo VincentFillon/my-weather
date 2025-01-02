@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Météo - Administration</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <h1>Administration des Colonnes</h1>
+    <div id="login-container">
+      <form id="login-form">
+        <input type="password" id="admin-password" placeholder="Mot de passe administrateur" required />
+        <button type="submit">Se connecter</button>
+      </form>
+    </div>
+    <div id="admin-container" style="display: none">
+      <div id="columns-list"></div>
+      <div class="add-column-container">
+        <input type="text" id="new-column-image" placeholder="URL de l'image" />
+        <input type="text" id="new-column-title" placeholder="Titre de la colonne" />
+        <input type="text" id="new-column-id" placeholder="Id (unique)" />
+        <button id="add-column">Ajouter</button>
+      </div>
+    </div>
+    <script src="admin.js"></script>
+  </body>
+</html>
