@@ -1,0 +1,121 @@
+/* MinimalCringe.css - Une librairie CSS pour un style volontairement légèrement dérangeant mais lisible */
+
+/* Corps avec un fond dégradé hypnotisant */
+body {
+  font-family: "Arial", sans-serif;
+  background: linear-gradient(120deg, #ffccff, #ccffff);
+  color: #333;
+  animation: subtlePulse 4s infinite alternate;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+@keyframes subtlePulse {
+  0% {
+      background-position: 0 0;
+  }
+  100% {
+      background-position: 100% 100%;
+  }
+}
+
+/* Titres décalés avec des couleurs inattendues */
+h1, h2, h3 {
+  font-family: "Courier New", monospace;
+  color: #9900cc;
+  text-transform: capitalize;
+  border-bottom: 2px solid #cc0099;
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 2px #fff;
+  margin-bottom: 20px;
+}
+
+/* Boutons avec des hover subtils mais irritants */
+button {
+  font-size: 1.2em;
+  color: #333;
+  background: linear-gradient(45deg, #ffdddd, #ddffdd);
+  border: 1px solid #666;
+  padding: 10px 20px;
+  border-radius: 5px;
+  transition: all 0.3s;
+}
+
+button:hover {
+  color: #fff;
+  background: #333;
+  letter-spacing: 2px;
+  transform: skewX(10deg);
+}
+
+/* Liens qui "vibrent" doucement */
+a {
+  color: #0099ff;
+  text-decoration: none;
+  position: relative;
+}
+
+a:hover::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: #0099ff;
+  animation: vibrate 0.3s infinite;
+}
+
+@keyframes vibrate {
+  0%, 100% {
+      transform: translateX(0);
+  }
+  50% {
+      transform: translateX(3px);
+  }
+}
+
+/* Tables légèrement perturbantes */
+table {
+  width: 90%;
+  margin: auto;
+  border-collapse: collapse;
+  border: 2px dashed #0099cc;
+}
+
+table th, table td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: left;
+  transition: background 0.3s;
+}
+
+table th {
+  background: #e6e6ff;
+  color: #333;
+}
+
+table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+table tr:hover td {
+  background: #ffffcc;
+}
+
+/* Images avec un effet de zoom constant */
+img {
+  display: block;
+  max-width: 100%;
+  margin: 20px auto;
+  border: 3px solid #ccc;
+  border-radius: 10px;
+  animation: slowZoom 10s infinite alternate;
+}
+
+@keyframes slowZoom {
+  0% {
+      transform: scale(1);
+  }
+  100% {
+      transform: scale(1.1);
+  }
+}

@@ -338,10 +338,12 @@ resetButton.addEventListener('click', () => {
 toggleSnowflakesButton.addEventListener('click', () => {
   if (snowflakes.style.display === 'none') {
     snowflakes.style.display = 'block';
-    toggleSnowflakesButton.style.backgroundColor = 'indianred';
+    toggleSnowflakesButton.classList.remove('btn-success');
+    toggleSnowflakesButton.classList.add('btn-danger');
   } else {
     snowflakes.style.display = 'none';
-    toggleSnowflakesButton.style.backgroundColor = 'forestgreen';
+    toggleSnowflakesButton.classList.remove('btn-danger');
+    toggleSnowflakesButton.classList.add('btn-success');
   }
   localStorage.setItem('snowflakes', snowflakes.style.display);
 });
@@ -351,8 +353,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   API.load().then(() => {
     const displaySnow = localStorage.getItem('snowflakes');
-    snowflakes.style.display = displaySnow === 'none' ? 'none' : 'block';
-    toggleSnowflakesButton.style.backgroundColor = displaySnow === 'none' ? 'forestgreen' : 'indianred';
+    if (displaySnow === 'none') {
+      snowflakes.style.display = 'block';
+      toggleSnowflakesButton.classList.remove('btn-success');
+      toggleSnowflakesButton.classList.add('btn-danger');
+    } else {
+      snowflakes.style.display = 'none';
+      toggleSnowflakesButton.classList.remove('btn-danger');
+      toggleSnowflakesButton.classList.add('btn-success');
+    }
 
     const formattedDate = new Date().toLocaleDateString('fr-FR', {
       weekday: 'long',

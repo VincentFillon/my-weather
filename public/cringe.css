@@ -1,0 +1,207 @@
+/* Cringe.css - Une librairie CSS pour un style volontairement "cringe" et exagéré */
+
+/* Police d'écriture trop funky */
+body {
+  font-family: 'Comic Sans MS', 'Papyrus', cursive;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: #ff9900;
+  text-shadow: 2px 2px #000;
+  animation: flashBackground 3s infinite alternate;
+  padding: 10px 10px 0;
+}
+
+/* Animation de fond cringe */
+@keyframes flashBackground {
+  0% {
+    background-color: #ff69b4;
+  }
+  50% {
+    background-color: #8a2be2;
+  }
+  100% {
+    background-color: #ff4500;
+  }
+}
+
+/* Titres absurdes */
+h1,
+h2,
+h3 {
+  font-family: 'Impact', sans-serif;
+  color: #00ff00;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  border: 5px dashed #ff00ff;
+  background: repeating-linear-gradient(45deg, #ff0, #f0f 10px, #0ff 20px);
+  padding: 10px;
+  animation: rubberBand 2s infinite linear;
+}
+
+@keyframes rotateTitle {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rubberBand {
+  from {
+    transform: scale3d(1, 1, 1);
+  }
+
+  30% {
+    transform: scale3d(1.25, 0.75, 1);
+  }
+
+  40% {
+    transform: scale3d(0.75, 1.25, 1);
+  }
+
+  50% {
+    transform: scale3d(1.15, 0.85, 1);
+  }
+
+  65% {
+    transform: scale3d(0.95, 1.05, 1);
+  }
+
+  75% {
+    transform: scale3d(1.05, 0.95, 1);
+  }
+
+  to {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+/* Boutons bling-bling */
+button {
+  font-size: 1.5em;
+  color: #000;
+  background: radial-gradient(circle, #ff0, #ff6347);
+  border: 3px solid #0000ff;
+  box-shadow: 0 0 10px #ff1493;
+  animation: pulse 1s infinite;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 15px;
+  text-transform: uppercase;
+  transition: transform 0.2s;
+}
+
+button:hover {
+  transform: scale(1.2) rotate(-10deg);
+}
+
+button.btn-success {
+  color: #fff;
+  background: radial-gradient(circle, rgb(213, 236, 160), #25b800);
+}
+button.btn-danger {
+  color: #fff;
+  background: radial-gradient(circle, rgb(245, 218, 68), #f80101);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Liens qui dansent */
+a {
+  color: #ff69b4;
+  text-decoration: none;
+  font-size: 1.2em;
+  animation: wiggle 0.5s infinite;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Bordures inutiles */
+div {
+  border: 10px groove #0000ff;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #0ff, #f0f);
+  padding: 15px;
+  box-shadow: 0 0 15px #00ff00;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Tables flashy */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: linear-gradient(45deg, #ffa500, #ff4500);
+  color: #fff;
+  font-size: 1.2em;
+  text-align: center;
+  box-shadow: 0 0 20px #ff69b4;
+}
+
+table th,
+table td {
+  border: 3px solid #00ffff;
+  padding: 10px;
+}
+
+table th {
+  background: linear-gradient(90deg, #ff0, #ff1493);
+  font-weight: bold;
+  text-shadow: 1px 1px #000;
+}
+
+table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Animation pour les hover sur les tables */
+table tr:hover {
+  background: rgba(255, 255, 0, 0.5);
+  /* transform: scale(1.05); */
+  transition: transform 0.3s, background 0.3s;
+}
+
+/* Inputs perturbants */
+input {
+  /* font-size: 1.2em; */
+  padding: 10px;
+  margin: 10px;
+  border: 3px solid #ff69b4;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #ffddff, #ddffff);
+  color: #333;
+  box-shadow: 0 0 10px #00ff00;
+  transition: all 0.3s;
+}
+
+input:focus {
+  border-color: #ff4500;
+  background: linear-gradient(90deg, #ffdd99, #ffff99);
+  box-shadow: 0 0 15px #ff4500;
+  transform: rotate(2deg) scale(1.05);
+}

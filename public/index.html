@@ -6,6 +6,9 @@
     <title>Météo</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="styles.css" />
+    <!-- <link rel="stylesheet" href="cringe.css" /> -->
+    <!-- <link rel="stylesheet" href="overkill.css" /> -->
+    <!-- <link rel="stylesheet" href="overkill2.css" /> -->
     <link rel="stylesheet" href="christmas.css" />
   </head>
   <body>
@@ -24,9 +27,10 @@
       <div class="snowflake">❆</div>
     </div>
 
-    <span id="toggle-snowflakes">❆</span>
+    <button id="toggle-cringe"></button>
+    <button id="toggle-snowflakes">❆</button>
 
-    <div id="current-date"></div>
+    <h1 id="current-date"></h1>
 
     <div class="main-container">
       <div class="participants">
@@ -51,7 +55,7 @@
         <div class="admin-container">
           <form onsubmit="return false;">
             <input type="password" id="admin-password" placeholder="Mot de passe" />
-            <button type="submit" id="admin-login">Mode admin</button>
+            <button type="submit" id="admin-login" class="btn-success">Mode admin</button>
           </form>
         </div>
       </div>
@@ -65,13 +69,13 @@
             <tr id="columns-body"></tr>
           </tbody>
         </table>
+        <div class="footer-container">
+          <button id="reset" title="Vide le localStorage et reload la page">C'est full bug, help me !</button>
+        </div>
       </div>
     </div>
 
-    <div class="footer-container">
-      <button id="reset" title="Vide le localStorage et reload la page">C'est full bug, help me !</button>
-    </div>
-
     <script src="script.js"></script>
+    <script src="cringe.js"></script>
   </body>
 </html>
