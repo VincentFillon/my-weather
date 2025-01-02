@@ -93,7 +93,8 @@ th img {
   opacity: 0.5;
 }
 
-.add-participant-container, .admin-container {
+.add-participant-container,
+.admin-container {
   display: flex;
   align-items: center;
   margin-top: 10px;
@@ -134,22 +135,25 @@ th img {
   border: 2px dashed #ccc;
 }
 
-#toggle-cringe {
+.toggle-btn {
   position: absolute;
   top: 35px;
-  left: 20px;
   border: 1px solid #ccc;
   color: #fff;
   padding: 2px 4px;
+  cursor: pointer;
+}
+
+#toggle-cringe {
+  left: 20px;
 }
 
 #toggle-snowflakes {
-  position: absolute;
-  top: 35px;
   left: 80px;
-  border: 1px solid #ccc;
-  color: #fff;
-  padding: 2px 4px;
+}
+
+#toggle-pokemon {
+  left: 140px;
 }
 
 .footer-container {
@@ -159,9 +163,11 @@ th img {
 .btn-success {
   color: #fff;
   background-color: #28a745;
+  cursor: pointer;
 }
 
 .btn-danger {
   color: #fff;
   background-color: #dc3545;
+  cursor: pointer;
 }

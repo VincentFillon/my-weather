@@ -9,6 +9,8 @@ const newParticipantInput = document.getElementById('new-participant');
 const adminPasswordInput = document.getElementById('admin-password');
 const adminLoginButton = document.getElementById('admin-login');
 
+const medianMood = document.getElementById('most-used-mood');
+
 const resetButton = document.getElementById('reset');
 
 const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`);
@@ -271,6 +273,49 @@ const updatePositions = () => {
       }
     });
   });
+
+  updateMedianMood();
+};
+
+const calculateMedianMood = () => {
+
+
+  const participantsMood = [];
+  API.data.columns.forEach(column => {
+    const mood = column.id;
+    participantsMood.push(...Object.values(API.data.positions).filter(p => p === mood));
+  });
+
+  const half = Math.floor(participantsMood.length / 2);
+
+  if (participantsMood.length % 2) {
+    return participantsMood[half];
+  } else {
+    return participantsMood[half - 1];
+  }
+};
+
+const updateMedianMood = () => {
+  // Calculer l'humeur médiane de l'ensemble des participants
+  const medianMoodId = calculateMedianMood(API.data.positions);
+
+  const medianMoodCol = API.data.columns.find(column => column.id === medianMoodId);
+
+  const title = document.createElement('span');
+  title.textContent = `Humeur médiane des participants :`;
+
+  const img = document.createElement('img');
+  img.src = medianMoodCol.image;
+  img.alt = medianMoodCol.title;
+  const span = document.createElement('span');
+  span.textContent = medianMoodCol.title;
+
+  medianMood.innerHTML = '';
+  medianMood.appendChild(title);
+  medianMood.appendChild(document.createElement('br'));
+  medianMood.appendChild(img);
+  medianMood.appendChild(document.createElement('br'));
+  medianMood.appendChild(span);
 };
 
 const renderColumns = async () => {
