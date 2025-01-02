@@ -16,11 +16,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Charger les données du fichier JSON
 const loadData = () => {
+  const today = new Date().toLocaleDateString();
   if (!fs.existsSync(DATA_FILE)) {
-    return { date: '', participants: [], positions: {} };
+    return { date: today, participants: [], positions: {} };
   }
   const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  const today = new Date().toLocaleDateString();
   if (today !== data.date) {
     const archivedFileName = `data_${data.date.replace(/\//g, '-')}.json`;
     fs.writeFileSync(path.join(DATA_DIR, archivedFileName), JSON.stringify(data, null, 2));
