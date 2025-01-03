@@ -1,7 +1,21 @@
 {
+  "name": "meteo",
+  "version": "1.0.0",
+  "description": "Projet Météo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "docker build -t meteo .",
+    "run": "docker run -p 3000:3000 meteo",
+    "dev": "nodemon server.js"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
   }
 }
