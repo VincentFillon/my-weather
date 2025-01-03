@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -36,10 +37,6 @@ const saveData = data => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 };
 
-// Afficher la date actuelle
-const updateDate = () => {
-};
-
 // Notifier tous les clients WebSocket
 const notifyClients = data => {
   wss.clients.forEach(client => {
@@ -71,7 +68,7 @@ const sanitizeInput = input => {
   return input;
 };
 
-const ADMIN_PASSWORD = 'Il y a master dedans'; // Remplacez par votre mot de passe administrateur
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // Middleware pour vérifier le mot de passe administrateur
 const checkAdminPassword = (req, res, next) => {

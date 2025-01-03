@@ -6,3 +6,6 @@ data/
 
 # Ignore externals directory
 externals/
+
+# Ignore .env file
+.env

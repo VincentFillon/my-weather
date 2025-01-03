@@ -338,6 +338,18 @@ const renderColumns = async () => {
     th.appendChild(img);
     th.appendChild(document.createElement('br'));
     th.appendChild(span);
+
+    if (column.sound) {
+      const soundButton = document.createElement('button');
+      soundButton.innerHTML = '🔊';
+      soundButton.style.marginLeft = '5px';
+      soundButton.addEventListener('click', () => {
+        const audio = new Audio(column.sound);
+        audio.play();
+      });
+      th.appendChild(soundButton);
+    }
+
     columnsHeader.appendChild(th);
 
     const td = document.createElement('td');

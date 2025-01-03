@@ -2,6 +2,7 @@ const columnsList = document.getElementById('columns-list');
 const addColumnButton = document.getElementById('add-column');
 const newColumnImageInput = document.getElementById('new-column-image');
 const newColumnTitleInput = document.getElementById('new-column-title');
+const newColumnSoundInput = document.getElementById('new-column-sound');
 const newColumnIdInput = document.getElementById('new-column-id');
 const loginForm = document.getElementById('login-form');
 const adminContainer = document.getElementById('admin-container');
@@ -54,7 +55,7 @@ const renderColumns = async () => {
     imageInput.value = column.image;
     imageInput.placeholder = 'URL de l\'image';
     imageInput.addEventListener('change', () => {
-      API.updateColumn(index, { image: imageInput.value, title: titleInput.value, id: idInput.value });
+      API.updateColumn(index, { image: imageInput.value, title: titleInput.value, sound: soundInput.value || null, id: idInput.value });
     });
     imageInput.style.marginLeft = '5px';
     imageInput.style.marginRight = '5px';
@@ -64,17 +65,27 @@ const renderColumns = async () => {
     titleInput.value = column.title;
     titleInput.placeholder = 'Titre de la colonne';
     titleInput.addEventListener('change', () => {
-      API.updateColumn(index, { image: imageInput.value, title: titleInput.value, id: idInput.value });
+      API.updateColumn(index, { image: imageInput.value, title: titleInput.value, sound: soundInput.value || null, id: idInput.value });
     });
     titleInput.style.marginLeft = '5px';
     titleInput.style.marginRight = '5px';
+
+    const soundInput = document.createElement('input');
+    soundInput.type = 'text';
+    soundInput.value = column.sound || null;
+    soundInput.placeholder = 'URL du son (optionel)';
+    soundInput.addEventListener('change', () => {
+      API.updateColumn(index, { image: imageInput.value, title: soundInput.value, sound: soundInput.value || null, id: idInput.value });
+    });
+    soundInput.style.marginLeft = '5px';
+    soundInput.style.marginRight = '5px';
 
     const idInput = document.createElement('input');
     idInput.type = 'text';
     idInput.value = column.id;
     idInput.placeholder = 'Id (unique)';
     idInput.addEventListener('change', () => {
-      API.updateColumn(index, { image: imageInput.value, title: titleInput.value, id: idInput.value });
+      API.updateColumn(index, { image: imageInput.value, title: titleInput.value, sound: soundInput.value || null, id: idInput.value });
     });
     idInput.style.marginLeft = '5px';
     idInput.style.marginRight = '5px';
@@ -87,6 +98,7 @@ const renderColumns = async () => {
 
     columnDiv.appendChild(imageInput);
     columnDiv.appendChild(titleInput);
+    columnDiv.appendChild(soundInput);
     columnDiv.appendChild(idInput);
     columnDiv.appendChild(removeButton);
 
