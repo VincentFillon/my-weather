@@ -13,6 +13,9 @@ RUN npm install
 # Copy the local code to the container image.
 COPY . .
 
+# If .env does not exist, copy .env.default to .env
+RUN if [ ! -f .env ]; then cp .env.default .env; fi
+
 # Expose the port the app runs on
 EXPOSE 3000
 
