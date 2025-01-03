@@ -93,18 +93,16 @@ app.get('/api/data', (req, res) => {
   res.json(data);
 });
 
+app.post('/api/data', (req, res) => {
+  const { data } = req.body;
+  saveData(data);
+  notifyClients(data);
+  res.status(200).send('Données sauvegardée.');
+});
+
 const sanitizeInput = input => {
   if (typeof input === 'string') {
-    return input
-      .replace(/[\\]/g, '\\\\')
-      .replace(/[\"]/g, '\\"')
-      .replace(/[\/]/g, '\\/')
-      .replace(/[\b]/g, '\\b')
-      .replace(/[\f]/g, '\\f')
-      .replace(/[\n]/g, '\\n')
-      .replace(/[\r]/g, '\\r')
-      .replace(/[\t]/g, '\\t')
-      .replace(/[<>]/g, '');
+    return input.replace(/[\\\"\/\b\f\n\r\t<>]/g, '');
   }
   return input;
 };
