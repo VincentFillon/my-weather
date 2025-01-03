@@ -5,6 +5,7 @@
   bottom: 0;
   right: 0;
   pointer-events: none;
+  z-index: -1;
 }
 
 .snowflake {
@@ -13,6 +14,10 @@
   font-size: 1em;
   font-family: Arial, sans-serif;
   text-shadow: 0 0 5px #000;
+  border: none !important;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
 }
 
 @-webkit-keyframes snowflakes-fall {

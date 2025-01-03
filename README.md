@@ -11,3 +11,11 @@ ADMIN_PASSWORD=votremotdepasse
 ```
 
 4. Lancez le serveur avec la commande `npm run start` (ou `node server.js`).
+
+## Docker
+
+Pour construire l'image Docker avec un mot de passe admin personnalisé, utilisez la commande suivante :
+
+```sh
+docker build --build-arg ADMIN_PASSWORD=votremotdepasse -t meteo .
+```

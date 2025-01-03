@@ -278,8 +278,6 @@ const updatePositions = () => {
 };
 
 const calculateMedianMood = () => {
-
-
   const participantsMood = [];
   API.data.columns.forEach(column => {
     const mood = column.id;
@@ -288,11 +286,12 @@ const calculateMedianMood = () => {
 
   const half = Math.floor(participantsMood.length / 2);
 
-  if (participantsMood.length % 2) {
-    return participantsMood[half];
-  } else {
-    return participantsMood[half - 1];
-  }
+  return participantsMood[half];
+  // if (participantsMood.length % 2) {
+  //   return participantsMood[half];
+  // } else {
+  //   return participantsMood[half];
+  // }
 };
 
 const updateMedianMood = () => {

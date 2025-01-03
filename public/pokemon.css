@@ -19,6 +19,7 @@ h3 {
   text-shadow: 2px 2px 0 #2a75bb, 4px 4px 0 #ffcb05;
   background: linear-gradient(to right, #ffcb05, #3b4cca);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-transform: uppercase;
   padding: 10px;

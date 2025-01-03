@@ -16,6 +16,10 @@ COPY . .
 # If .env does not exist, copy .env.default to .env
 RUN if [ ! -f .env ]; then cp .env.default .env; fi
 
+# Set the admin password if provided during build
+ARG ADMIN_PASSWORD
+RUN if [ -n "$ADMIN_PASSWORD" ]; then sed -i "s/ADMIN_PASSWORD=.*/ADMIN_PASSWORD=$ADMIN_PASSWORD/" .env; fi
+
 # Expose the port the app runs on
 EXPOSE 3000
 

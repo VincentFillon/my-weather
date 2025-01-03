@@ -19,16 +19,57 @@ app.use(express.static(path.join(__dirname, 'public')));
 const loadData = () => {
   const today = new Date().toLocaleDateString();
   if (!fs.existsSync(DATA_FILE)) {
-    return { date: today, participants: [], positions: {} };
+    return {
+      date: today,
+      participants: [],
+      positions: {},
+      columns: [
+        {
+          image: 'icons/soleil.png',
+          title: 'Je vie ma meilleure vie',
+          id: 'soleil',
+        },
+        {
+          image: 'icons/nuageux.png',
+          title: 'Ca va',
+          id: 'nuageux',
+        },
+        {
+          image: 'icons/couvert.png',
+          title: 'Ca pourrait aller mieux',
+          id: 'couvert',
+        },
+        {
+          image: 'icons/pluvieux.png',
+          title: 'Je ne sais pas ce que je fout là',
+          id: 'pluvieux',
+        },
+        {
+          image: 'icons/orageux.png',
+          title: 'Foutez moi la paix nom de dieu',
+          id: 'orageux',
+        },
+        {
+          image: 'icons/irrution.png',
+          title: "J'pète les plombs",
+          id: 'irrution',
+        },
+        {
+          image: 'icons/explosion.png',
+          title: 'Vous me faites tous chier',
+          id: 'explosion',
+        },
+      ],
+    };
   }
   const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  if (today !== data.date) {
-    const archivedFileName = `data_${data.date.replace(/\//g, '-')}.json`;
-    fs.writeFileSync(path.join(DATA_DIR, archivedFileName), JSON.stringify(data, null, 2));
-    data.date = today;
-    data.positions = {};
-    saveData(data);
-  }
+  // if (today !== data.date) {
+  //   const archivedFileName = `data_${data.date.replace(/\//g, '-')}.json`;
+  //   fs.writeFileSync(path.join(DATA_DIR, archivedFileName), JSON.stringify(data, null, 2));
+  //   data.date = today;
+  //   data.positions = {};
+  //   saveData(data);
+  // }
   return data;
 };
 
