@@ -17,7 +17,8 @@ body {
 #current-date {
   margin: 10px auto;
   font-weight: bold;
-  width: 70%;
+  width: 55%;
+  text-transform: capitalize;
 }
 
 .main-container {
@@ -147,8 +148,18 @@ th img {
 
 .top-btn-container {
   position: absolute;
-  top: 35px;
+  top: 25px;
   left: 20px;
+  border: none !important;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.top-right-container {
+  position: absolute;
+  top: 25px;
+  right: 20px;
   border: none !important;
   padding: 0 !important;
   background: none !important;

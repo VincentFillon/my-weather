@@ -1,5 +1,5 @@
 const cringeToggleButton = document.getElementById('toggle-cringe');
-const CRINGE_STORAGE_KEY = 'cringeCssEnabled';
+const CRINGE_STORAGE_KEY = 'toggle-cringe';
 let cringeLink;
 
 // Fonction pour charger ou retirer la feuille de style

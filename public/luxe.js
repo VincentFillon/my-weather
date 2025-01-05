@@ -1,5 +1,5 @@
 const luxeToggleButton = document.getElementById('toggle-luxe');
-const LUXE_STORAGE_KEY = 'luxeCssEnabled';
+const LUXE_STORAGE_KEY = 'toggle-luxe';
 let luxeLink;
 
 // Fonction pour charger ou retirer la feuille de style

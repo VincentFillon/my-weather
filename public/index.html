@@ -28,13 +28,17 @@
     </div>
 
     <div class="top-btn-container">
-      <button id="toggle-cringe" class="toggle-btn"></button>
-      <button id="toggle-luxe" class="toggle-btn"></button>
-      <!-- <button id="toggle-pokemon" class="toggle-btn"></button> -->
+      <button id="toggle-cringe" class="toggle-btn theme_unique"></button>
+      <button id="toggle-luxe" class="toggle-btn theme_unique"></button>
+      <!-- <button id="toggle-pokemon" class="toggle-btn theme_unique"></button> -->
       <button id="toggle-snowflakes" class="toggle-btn">❆</button>
     </div>
 
     <h1 id="current-date"></h1>
+
+	<div class="top-right-container">
+	  <button id="reset" class="pokeball" title="Vide le localStorage et reload la page">C'est full bug, help me !</button>
+	</div>
 
     <div class="main-container">
       <div class="participants">
@@ -75,16 +79,12 @@
         </table>
 
         <div id="most-used-mood"></div>
-
-        <div class="footer-container">
-          <button id="reset" class="pokeball" title="Vide le localStorage et reload la page">C'est full bug, help me !</button>
-        </div>
       </div>
     </div>
 
     <script src="script.js"></script>
     <script src="cringe.js"></script>
     <script src="luxe.js"></script>
-    <!-- <script src="pokemon.js"></script> -->
+    <script src="pokemon.js"></script>
   </body>
 </html>
