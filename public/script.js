@@ -301,7 +301,7 @@ const updateMedianMood = () => {
   const medianMoodCol = API.data.columns.find(column => column.id === medianMoodId);
 
   const title = document.createElement('span');
-  title.textContent = `Humeur médiane des participants :`;
+  title.textContent = `Humeur médiane des participants`;
 
   const img = document.createElement('img');
   img.src = medianMoodCol.image;
@@ -401,15 +401,15 @@ toggleSnowflakesButton.addEventListener('click', () => {
     toggleSnowflakesButton.classList.remove('btn-danger');
     toggleSnowflakesButton.classList.add('btn-success');
   }
-  localStorage.setItem('snowflakes', snowflakes.style.display);
+  localStorage.setItem('toggle-snowflakes', snowflakes.style.display);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('.add-participant-container').style.display = 'none';
 
   API.load().then(() => {
-    const displaySnow = localStorage.getItem('snowflakes');
-    if (displaySnow === 'none') {
+    const displaySnow = localStorage.getItem('toggle-snowflakes');
+    if (displaySnow === 'block') {
       snowflakes.style.display = 'block';
       toggleSnowflakesButton.classList.remove('btn-success');
       toggleSnowflakesButton.classList.add('btn-danger');
@@ -425,9 +425,57 @@ document.addEventListener('DOMContentLoaded', () => {
       month: 'long',
       day: 'numeric',
     });
-    currentDateElement.textContent = `Aujourd'hui : ${formattedDate}`;
+    currentDateElement.textContent = `${formattedDate}`;
 
     renderParticipants();
     renderColumns();
+  });
+});
+
+// Fonction pour activer les boutons au chargement de la page
+function activateButtonsFromLocalStorage() {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('toggle-')) {
+      const value = localStorage.getItem(key);
+      if (value === 'true') {
+        const button = document.getElementById(key);
+        if (button) {
+          button.classList.add('active');
+        }
+      }
+    }
+  }
+}
+activateButtonsFromLocalStorage();
+
+
+// Récupérer tous les boutons avec la classe "theme_unique"
+const buttons = document.querySelectorAll('.theme_unique');
+// Ajoute un gestionnaire de clic à chaque bouton
+buttons.forEach(button => {
+  button.addEventListener('click', () => {
+    // Trouve tous les boutons actuellement actifs
+    const activeButtons = document.querySelectorAll('.theme_unique.active');
+
+    // Simule un clic sur chaque bouton actif
+    activeButtons.forEach(activeButton => {
+      if (activeButton !== button) {
+        activeButton.click(); // Simule un clic
+      }
+    });
+
+    // Gere la classe 'active'
+    buttons.forEach(btn => {
+	  if (btn === button) {
+		  if (button.classList.contains('active')) {
+	          button.classList.remove('active');
+		  } else {
+			  button.classList.add('active');
+		  }
+	  } else {
+		  btn.classList.remove('active')
+	  }
+	});
   });
 });
