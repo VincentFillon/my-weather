@@ -79,10 +79,13 @@ const saveData = data => {
 };
 
 // Notifier tous les clients WebSocket
-const notifyClients = data => {
+const notifyClients = (data, details) => {
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
+      client.send(JSON.stringify({
+        json: data,
+        details
+      }));
     }
   });
 };
@@ -151,7 +154,10 @@ app.post('/api/participants/add', (req, res) => {
   if (!data.participants.includes(sanitizedParticipant)) {
     data.participants.push(sanitizedParticipant);
     saveData(data);
-    notifyClients(data);
+    notifyClients(data, {
+      username: sanitizedParticipant,
+      action: 'registered',
+    });
     res.status(200).json({ participants: data.participants });
   } else {
     res.status(400).send('Participant existe déjà.');
@@ -199,7 +205,10 @@ app.post('/api/positions/update', (req, res) => {
   if (!data.positions[sanitizedKey] || data.positions[sanitizedKey] !== sanitizedValue) {
     data.positions[sanitizedKey] = sanitizedValue;
     saveData(data);
-    notifyClients(data);
+    notifyClients(data, {
+      username: sanitizedKey,
+      newPosition: sanitizedValue
+    });
     res.status(200).json({ positions: data.positions });
   } else {
     res.status(400).send('Position existe déjà.');

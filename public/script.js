@@ -1,5 +1,6 @@
 const snowflakes = document.getElementById('snowflakes-container');
 const toggleSnowflakesButton = document.getElementById('toggle-snowflakes');
+const toggleNotifButton = document.getElementById('toggle-notif');
 
 const currentDateElement = document.getElementById('current-date');
 
@@ -16,6 +17,13 @@ const resetButton = document.getElementById('reset');
 const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`);
 
 let isAdmin = false;
+
+const notifStatus = {
+  authorized: false,
+  enabled: true,
+  limit: 3,
+  list: []
+};
 
 // API pour la gestion du JSON
 const API = {
@@ -75,11 +83,35 @@ const API = {
 };
 
 socket.addEventListener('message', event => {
-  const data = JSON.parse(event.data);
-  API.data = data;
+  console.log(event);
+  const response = JSON.parse(event.data);
+  API.data = response.json;
   renderParticipants();
   // renderColumns();
   updatePositions();
+  if(response.details) {
+    const user = response.details.username;
+    const action = response.details.action;
+    if(user != null && user !== '' && user !== userName) {
+      const tag = `myweather_${user}`;
+      if(action) {
+        switch (action) {
+          case "registered":
+            createNotif(user, tag, "Salut les bros !");
+            break;
+        
+          default:
+            break;
+        }
+      }
+      else if(response.details.newPosition) {
+        const title = getTitleById(response.details.newPosition);
+        let msg = "J'ai changé d'humeur !";
+        if(title != null) msg = title;
+        createNotif(user, tag, msg, response.details.newPosition);
+      }
+    }
+  }
 });
 
 const userName = localStorage.getItem('userName') || prompt('Veuillez entrer votre pseudonyme:');
@@ -404,6 +436,25 @@ toggleSnowflakesButton.addEventListener('click', () => {
   localStorage.setItem('toggle-snowflakes', snowflakes.style.display);
 });
 
+toggleNotifButton.addEventListener('click', () => {
+  notifStatus.enabled = !notifStatus.enabled;
+  toggleDisplayNotifButton(notifStatus.enabled);
+  localStorage.setItem('toggle-notif', notifStatus.enabled);
+});
+
+const toggleDisplayNotifButton = (enabled) => {
+  if (enabled) {
+    toggleNotifButton.classList.add('btn-success');
+    toggleNotifButton.classList.remove('btn-danger');
+    notifStatus.enabled = true;
+    
+  } else {
+    toggleNotifButton.classList.add('btn-danger');
+    toggleNotifButton.classList.remove('btn-success');
+    notifStatus.enabled = false;
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('.add-participant-container').style.display = 'none';
 
@@ -479,3 +530,43 @@ buttons.forEach(button => {
 	});
   });
 });
+
+// Notifications
+Notification.requestPermission().then((resultat) => {
+  console.log(resultat);
+  notifStatus.authorized = resultat === 'granted';
+  toggleNotifButton.style.display = notifStatus.authorized ? 'inline' : 'none';
+
+  if(notifStatus.authorized) {
+    const displayBtnNotif = localStorage.getItem('toggle-notif');
+    toggleDisplayNotifButton(displayBtnNotif === 'true');
+  }
+});
+
+const createNotif = (titre, tag, text, humeur) => {
+  if(!notifStatus.authorized || !notifStatus.enabled) return;
+
+  const limit = notifStatus.limit;
+  if(notifStatus.list.length >= limit) {
+    notifStatus.list[0].close();
+    notifStatus.list.shift();
+  }
+
+  const notification = new Notification(titre, {
+    body: text,
+    tag,
+    icon: `/icons/${humeur}.png`,
+  });
+
+  notification.onclose = (event) => {
+    const index = notifStatus.list.findIndex((notif) => event.target.tag === notif.tag);
+    if(index !== -1) notifStatus.list.splice(index, 1);
+  };
+
+  notifStatus.list.push(notification);
+};
+
+const getTitleById = id => {
+  const objResult = API.data.columns.find(column => column.id === id);
+  return objResult ? objResult.title : null;
+};
