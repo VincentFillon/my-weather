@@ -13,8 +13,8 @@ RUN npm install
 # Copy the local code to the container image.
 COPY . .
 
-# If .env does not exist, copy .env.default to .env
-RUN if [ ! -f .env ]; then cp .env.default .env; fi
+# If .env does not exist, copy .env.example to .env
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
 # Set the admin password if provided during build
 ARG ADMIN_PASSWORD
