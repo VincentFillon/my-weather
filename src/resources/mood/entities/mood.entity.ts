@@ -11,6 +11,9 @@ export class Mood {
   name: string;
 
   @Prop({ required: true })
+  order: number;
+
+  @Prop({ required: true })
   image: string;
 
   @Prop()
