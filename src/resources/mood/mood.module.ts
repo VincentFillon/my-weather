@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from 'src/resources/auth/auth.module';
 import { Mood, MoodSchema } from 'src/resources/mood/entities/mood.entity';
@@ -10,6 +11,10 @@ import { MoodService } from './mood.service';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Mood.name, schema: MoodSchema }]),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '12h' },
+    }),
     UserModule,
     forwardRef(() => AuthModule),
   ],

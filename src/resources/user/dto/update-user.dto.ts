@@ -1,17 +1,14 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { IsEnum, IsNotEmpty, IsOptional, Validate } from 'class-validator';
-import { Role } from 'src/resources/auth/enums/role.enum';
+import { IsNotEmpty, IsOptional, Validate } from 'class-validator';
 import { Mood } from 'src/resources/mood/entities/mood.entity';
 import { MoodExistsValidator } from 'src/validators/mood-exists.validator';
-import { CreateUserDto } from './create-user.dto';
 
-export class UpdateUserDto extends PartialType(CreateUserDto) {
+export class UpdateUserDto {
   @IsNotEmpty()
   _id: string;
 
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
+  @IsNotEmpty()
+  image?: string;
 
   @IsOptional()
   @Validate(MoodExistsValidator)

@@ -15,14 +15,14 @@ export class User {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ default: Role.USER })
+  @Prop({ required: true, enum: Role, default: Role.USER })
   role: Role = Role.USER;
 
   @Prop()
   image?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Mood' })
-  mood: Mood;
+  mood: Mood | null = null;
 
   @Prop()
   createdAt?: Date;

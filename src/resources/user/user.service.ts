@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/resources/user/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { FullUpdateUserDto } from './dto/full-update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -20,26 +20,33 @@ export class UserService {
   }
 
   findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().exec();
+    return this.userModel.find().populate('mood').exec();
   }
 
   findOne(id: string): Promise<UserDocument> {
-    return this.userModel.findById(id).exec();
+    return this.userModel.findById(id).populate('mood').exec();
   }
 
   findByUsername(username: string): Promise<UserDocument> {
-    return this.userModel.findOne({ username }).exec();
+    return this.userModel.findOne({ username }).populate('mood').exec();
   }
 
   findByMood(moodId: string): Promise<UserDocument[]> {
-    return this.userModel.find({ mood: moodId }).exec();
+    return this.userModel.find({ mood: moodId }).populate('mood').exec();
   }
 
-  update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
-    return this.userModel.findByIdAndUpdate(id, updateUserDto).exec();
+  async update(
+    id: string,
+    updateUserDto: FullUpdateUserDto,
+  ): Promise<UserDocument> {
+    // Mettre à jour l'utilisateur
+    await this.userModel.findByIdAndUpdate(id, updateUserDto).exec();
+    const updatedUser = await this.findOne(id);
+
+    return updatedUser;
   }
 
   remove(id: string): Promise<UserDocument> {
-    return this.userModel.findByIdAndDelete(id).exec();
+    return this.userModel.findByIdAndDelete(id).populate('mood').exec();
   }
 }

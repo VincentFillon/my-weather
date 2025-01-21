@@ -1,7 +1,8 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SocketIoAdapter } from 'src/config/socket-io.adapter';
 import { AppModule } from './app.module';
+import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,14 +12,22 @@ async function bootstrap() {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('The API description')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  setupSwagger(app);
+
+  app.setGlobalPrefix(process.env.API_PREFIX, {
+    exclude: ['/'],
+  });
+
+  app.useWebSocketAdapter(new SocketIoAdapter(app));
+
+  app.enableCors({
+    origin: (
+      requestOrigin: string,
+      callback: (err: Error | null, origin?: string) => void,
+    ) => {
+      callback(null, requestOrigin);
+    },
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

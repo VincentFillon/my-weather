@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { Request } from 'express';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -12,6 +13,15 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
     if (context.getType() === 'http') {
       return this.validateHttpRequest(
         context.switchToHttp().getRequest<Request>(),
@@ -60,7 +70,7 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private extractTokenFromWs(client: any): string | undefined {
-    const token = client.handshake?.headers?.authorization?.split(' ')[1];
+    const token = client.handshake?.headers?.authorization;
     return token;
   }
 }
