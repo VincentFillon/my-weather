@@ -10,13 +10,14 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { LoginResponse } from 'src/resources/auth/dto/login.response';
+import { UpdateImageDto } from 'src/resources/auth/dto/update-image.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
-import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -117,8 +118,8 @@ export class AuthController {
     summary: "Mettre à jour l'image de profil",
     description: "Permet à un utilisateur de modifier son image de profil",
   })
-  async updateImage(@Request() req, @Body() image: string) {
-    return this.authService.updateImage(req.user._id, image);
+  async updateImage(@Request() req, @Body() updateImageDto: UpdateImageDto) {
+    return this.authService.updateImage(req.user._id, updateImageDto.image);
   }
 
   @Put('password')
