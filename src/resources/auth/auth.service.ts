@@ -23,15 +23,7 @@ export class AuthService {
   async validateUser(loginDto: LoginDto): Promise<LoginResponse | null> {
     const user = await this.userService.findByUsername(loginDto.username);
     if (user && (await compare(loginDto.password, user.password))) {
-      const payload = {
-        username: user.username,
-        sub: user._id,
-        role: user.role,
-      };
-      const token = this.jwtService.sign(payload, {
-        secret: process.env.JWT_SECRET,
-      });
-      return { user, token };
+      return this.generateTokenResponse(user);
     }
     return null;
   }
@@ -52,7 +44,21 @@ export class AuthService {
       role: Role.USER, // Par défaut, les nouveaux utilisateurs ont le rôle USER
     });
 
-    // Générer le token JWT
+    return this.generateTokenResponse(user);
+  }
+
+  async refreshToken(user: any): Promise<LoginResponse> {
+    const fullUser = await this.userService.findOne(user.sub);
+    if (!fullUser) {
+      throw new UnauthorizedException('User not found');
+    }
+    return this.generateTokenResponse(fullUser);
+  }
+
+  private generateTokenResponse(user: UserDocument): LoginResponse {
+    const expiresIn = 12 * 60 * 60; // 12 heures en secondes
+    const expiresAt = Date.now() + expiresIn * 1000;
+
     const payload = {
       username: user.username,
       sub: user._id,
@@ -61,11 +67,13 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
+      expiresIn: `${expiresIn}s`,
     });
 
-    return {
-      user,
+    return { 
+      user, 
       token,
+      expiresAt 
     };
   }
 

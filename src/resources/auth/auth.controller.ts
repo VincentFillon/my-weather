@@ -5,7 +5,8 @@ import {
   Post,
   Put,
   Request,
-  UnauthorizedException
+  UnauthorizedException,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/decorators/public.decorator';
@@ -15,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -134,6 +136,26 @@ export class AuthController {
       updatePasswordDto.newPassword,
     );
     return { message: 'Mot de passe mis à jour avec succès' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('refresh-token')
+  @ApiOperation({
+    summary: 'Rafraîchir le token JWT',
+    description: 'Permet de rafraîchir le token JWT avant son expiration',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token rafraîchi avec succès',
+    type: LoginResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token invalide ou expiré',
+  })
+  async refreshToken(@Request() req) {
+    const user = req.user;
+    return this.authService.refreshToken(user);
   }
 
   @Delete()
