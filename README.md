@@ -1,99 +1,95 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Ma Météo
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Ma météo est une application web permettant aux utilisateurs d'indiquer l'état d'humeur dans lequels ils se trouvent.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+L'interface se présente sous la forme d'une grille d'humeurs. L'utilisateur, lors de sa première connexion renseigne son nom (ou un pseudonyme) et sera ajouté dans une zone neutre à gauche. Il pourra ensuite glisser/déposer son utilisateur dans la tuile représentant son humeur.
 
-## Description
+Les utilisateurs on accès à un espace personnel dans lequel ils peuvent modifier leurs informations personnelles (nom, photo de profil, mot de passe) ou supprimer leur compte.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Un espace administrateur est accessible via le `/admin` (uniquement accessible pour les utilisateurs avec le role `admin`). Cet espace permet de modifier et/ou ajouter des humeurs, de gérer les médias (upload/suppression d'images ou de fichiers audios) et de gérer les utilisateurs (modification des infos, assignation de roles ou suppression).
+>Lors de l'ajout d'une humeur, on doit renseigner un lien vers une image. On peut y insérer un lien externe ou alors importer l'image dans la gestion des médias et copier le lien pour l'utiliser lors de la création de l'humeur. Il en va de même pour l'URL (optionnelle) du fichier audio.
 
-## Project setup
+_**PS:** Il peut être utile de consulter cette météo avant d'entammer une conversation avec un collègue afin d'éviter tout risque de brûlure au 2nd degré par projection de café au visage_ 😁
 
-```bash
-$ npm install
+
+## Environnement
+
+NodeJS 22.x : [https://nodejs.org/fr/download](https://nodejs.org/fr/download)
+
+
+## Configuration
+
+1. Installer les dépendances avec la commande :
+
+    ```sh
+    npm install
+    ```
+
+2. Renommez ou créer une copie du fichier [.env.default](./.env.default) vers `.env`.
+3. Ouvrez le fichier [.env](./.env) et remplacez les valeurs des différentes variables par celles correspondant à votre environnement :
+
+    ```env
+    # API
+    API_PORT=8888
+
+    # ... etc.
+    ```
+
+    >⚠️ Les informations de connexion à la base de données ainsi que la clé de vérification des token sont définit ici. Il est **fortement recommandé** de les modifier avant tout déploiement dans un environnement de production ou accessible depuis l'extérieur.
+
+4. Sauvegardez le fichier [.env](./.env).
+
+
+## Développement
+
+Le backend (API) a été développé sous **NestJS**.
+
+Veuillez vous référez à la [documentation](https://docs.nestjs.com/) si nécessaire pour mieux comprendre l'architecture d'un projet NestJS et les différents outils disponibles pour faciliter le développement.
+
+Pour démarrer le serveur en mode développement (avec live-reload) en local, exécutez la commande suivante :
+
+```sh
+npm run start:dev
 ```
 
-## Compile and run the project
 
-```bash
-# development
-$ npm run start
+## Build
 
-# watch mode
-$ npm run start:dev
+Pour compiler les sources du projet, utilisez la commande suivante :
 
-# production mode
-$ npm run start:prod
+```sh
+npm run build
 ```
 
-## Run tests
+>Les sources compilées se trouveront dans le dossier [dist](./dist)
 
-```bash
-# unit tests
-$ npm run test
 
-# e2e tests
-$ npm run test:e2e
+## Déploiement
 
-# test coverage
-$ npm run test:cov
+Pour déployer et démarrer le serveur en local, utilisez les commandes suivantes :
+
+```sh
+npm run build
+npm run start:prod
 ```
 
-## Deployment
+Le serveur sera démarré sur le port renseigné par la variable d'environnement `API_PORT` (par défaut `3000`). Vous pourrez ensuite effectuer vos requêtes API sur [http://localhost:3000/api/](http://localhost:3000/api/). Une WebSocket sera également ouverte sur [ws://localhost:3000/](ws://localhost:3000/)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Docker
 
-```bash
-$ npm install -g mau
-$ mau deploy
+Pour construire l'image Docker, utilisez la commande suivante :
+
+```sh
+npm run docker:build
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+>Vous pouvez modifier les instructions de construction de l'image Docker dans le fichier [Dockerfile](./Dockerfile).
 
-## Resources
+Pour déployer l'image dans un container Docker, utilisez la commande suivante :
 
-Check out a few resources that may come in handy when working with NestJS:
+```sh
+npm run docker:run
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Cette commande va démarrer un container nommé `meteo` exposé sur le `PORT` défini dans le fichier [.env](./.env).

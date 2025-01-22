@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "docker:build": "dotenv -- sh -c 'docker build --build-arg PORT=${PORT:-3000} -t meteo .'",
+    "docker:run": "dotenv -- sh -c 'docker run -p ${PORT:-3000}:${PORT:-3000} --name meteo meteo'"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.2",
