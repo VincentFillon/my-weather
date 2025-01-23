@@ -17,8 +17,8 @@ export class UploadService {
   private readonly uploadDir: string;
 
   constructor(@InjectModel(Media.name) private mediaModel: Model<Media>) {
-    this.uploadDir = resolve(process.cwd(), 'uploads');
-    // Créer le dossier uploads s'il n'existe pas
+    this.uploadDir = resolve(process.cwd(), 'data');
+    // Créer le dossier data s'il n'existe pas
     if (!existsSync(this.uploadDir)) {
       mkdirSync(this.uploadDir, { recursive: true });
     }
@@ -81,7 +81,7 @@ export class UploadService {
     const sanitizedFilename = UploadValidator.sanitizeFilename(filename);
     const targetPath = normalize(join(this.uploadDir, sanitizedFilename));
 
-    // Vérifier que le chemin est bien dans le dossier uploads
+    // Vérifier que le chemin est bien dans le dossier data
     if (!targetPath.startsWith(this.uploadDir)) {
       throw new BadRequestException('Invalid file path');
     }
@@ -90,6 +90,6 @@ export class UploadService {
   }
 
   getFileUrl(filename: string): string {
-    return `/uploads/${UploadValidator.sanitizeFilename(filename)}`;
+    return `/data/${UploadValidator.sanitizeFilename(filename)}`;
   }
 }
