@@ -1,0 +1,12 @@
+node_modules
+
+dist
+
+.git
+.gitignore
+.prettierrc
+README.md
+
+_old
+data
+externals
