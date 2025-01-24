@@ -13,6 +13,7 @@ import { Public } from 'src/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { LoginResponse } from 'src/resources/auth/dto/login.response';
 import { UpdateImageDto } from 'src/resources/auth/dto/update-image.dto';
+import { User } from 'src/resources/user/entities/user.entity';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -55,7 +56,7 @@ export class AuthController {
   })
   async login(@Body() loginDto: LoginDto) {
     const response = await this.authService.validateUser(loginDto);
-    if (!response.token) {
+    if (!response?.token) {
       throw new UnauthorizedException('Invalid credentials');
     }
     return response;
@@ -98,30 +99,51 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put('username')
   @ApiOperation({
     summary: "Mettre à jour le nom d'utilisateur",
     description: "Permet à un utilisateur de modifier son nom d'utilisateur",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Nom d'utilisateur mis à jour avec succès",
+    type: User
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Nom invalide (ex: déjà utilisé ou vide)',
   })
   async updateUsername(
     @Request() req,
     @Body() updateUsernameDto: UpdateUsernameDto,
   ) {
     return this.authService.updateUsername(
-      req.user._id,
+      req.user.sub,
       updateUsernameDto.username,
     );
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put('image')
   @ApiOperation({
     summary: "Mettre à jour l'image de profil",
     description: "Permet à un utilisateur de modifier son image de profil",
   })
+  @ApiResponse({
+    status: 200,
+    description: "Image de l'utilisateur mise à jour avec succès",
+    type: User
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'URL Image invalide (ex: URL vide)',
+  })
   async updateImage(@Request() req, @Body() updateImageDto: UpdateImageDto) {
-    return this.authService.updateImage(req.user._id, updateImageDto.image);
+    return this.authService.updateImage(req.user.sub, updateImageDto.image);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put('password')
   @ApiOperation({
     summary: 'Mettre à jour le mot de passe',
@@ -132,7 +154,7 @@ export class AuthController {
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
     await this.authService.updatePassword(
-      req.user._id,
+      req.user.sub,
       updatePasswordDto.currentPassword,
       updatePasswordDto.newPassword,
     );
@@ -173,7 +195,7 @@ export class AuthController {
     description: 'Utilisateur non trouvé',
   })
   async deleteAccount(@Request() req) {
-    await this.authService.deleteAccount(req.user._id);
+    await this.authService.deleteAccount(req.user.sub);
     return { message: 'Compte supprimé avec succès' };
   }
 }
