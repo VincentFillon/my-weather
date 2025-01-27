@@ -24,7 +24,7 @@ import { UserModule } from './resources/user/user.module';
     ),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'data'),
-      serveRoot: '/data',
+      serveRoot: `/${process.env.API_PREFIX}/data`,
     }),
     PassportModule,
     JwtModule.register({
