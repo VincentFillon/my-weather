@@ -9,6 +9,7 @@ export class SocketIoAdapter extends IoAdapter {
 
   createIOServer(port: number, options?: ServerOptions) {
     options.cors = { origin: true };
+    options.path = `/${process.env.API_PREFIX}`;
     const server = super.createIOServer(port, options);
     return server;
   }
