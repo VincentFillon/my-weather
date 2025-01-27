@@ -14,9 +14,9 @@ async function bootstrap() {
 
   setupSwagger(app);
 
-  // app.setGlobalPrefix(process.env.API_PREFIX, {
-  //   exclude: ['/'],
-  // });
+  app.setGlobalPrefix(process.env.API_PREFIX, {
+    exclude: ['/'],
+  });
 
   app.useWebSocketAdapter(new SocketIoAdapter(app));
 
