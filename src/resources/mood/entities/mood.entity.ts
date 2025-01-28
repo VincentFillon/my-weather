@@ -23,7 +23,7 @@ export class Mood {
   createdAt?: Date;
 
   @Prop()
-  updateddAt?: Date;
+  updatedAt?: Date;
 }
 
 export const MoodSchema = SchemaFactory.createForClass(Mood);

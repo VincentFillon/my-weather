@@ -13,6 +13,7 @@ import { Roles } from 'src/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Role } from 'src/resources/auth/enums/role.enum';
+import { User } from 'src/resources/user/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
@@ -75,7 +76,15 @@ export class UserGateway {
       throw new WsException('Unauthorized');
     }
 
-    const updatedUser = await this.userService.update(user._id, user);
+    let currentUserEntity: User | null = null;
+    if (currentUser.sub !== user._id)
+      currentUserEntity = await this.findOne(currentUser.sub);
+
+    const updatedUser = await this.userService.update(
+      user._id,
+      user,
+      currentUserEntity,
+    );
     this.server.emit('userUpdated', updatedUser);
     return updatedUser;
   }
@@ -94,9 +103,14 @@ export class UserGateway {
     if (user.sub !== updateUserDto._id && user.role !== Role.ADMIN) {
       throw new WsException('Forbidden');
     }
+
+    let currentUserEntity: User | null = null;
+    if (user.sub !== user._id) currentUserEntity = await this.findOne(user.sub);
+
     const updatedUser = await this.userService.update(
       updateUserDto._id,
       updateUserDto,
+      currentUserEntity,
     );
     this.server.emit('userMoodUpdated', updatedUser);
     return updatedUser;

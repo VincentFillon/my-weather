@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Mood, MoodDocument } from 'src/resources/mood/entities/mood.entity';
@@ -12,6 +13,7 @@ export class MoodService {
   constructor(
     @InjectModel(Mood.name) private moodModel: Model<Mood>,
     private userService: UserService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async create(createMoodDto: CreateMoodDto): Promise<MoodDocument> {
@@ -27,7 +29,10 @@ export class MoodService {
     return this.moodModel.findById(id).exec();
   }
 
-  async update(id: string, updateMoodDto: UpdateMoodDto): Promise<MoodDocument> {
+  async update(
+    id: string,
+    updateMoodDto: UpdateMoodDto,
+  ): Promise<MoodDocument> {
     await this.moodModel.findByIdAndUpdate(id, updateMoodDto).exec();
     return this.findOne(id);
   }
@@ -37,6 +42,7 @@ export class MoodService {
     for (const user of users) {
       user.mood = null;
       await user.save();
+      this.eventEmitter.emit('user.mood.updated', user, null);
     }
 
     return this.moodModel.findByIdAndDelete(id).exec();

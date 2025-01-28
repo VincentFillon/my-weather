@@ -18,7 +18,7 @@ export class Media {
     createdAt?: Date;
 
     @Prop()
-    updateddAt?: Date;
+    updatedAt?: Date;
 }
 
 export const MediaSchema = SchemaFactory.createForClass(Media);
