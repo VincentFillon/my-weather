@@ -50,7 +50,7 @@ export class UserService {
     const updatedUser = await this.findOne(id);
     // console.debug(updatedUser);
 
-    if (previousUser.mood !== updatedUser.mood) {
+    if (previousUser.mood?._id !== updatedUser.mood?._id) {
       this.eventEmitter.emit('user.mood.updated', updatedUser, fromUser);
     }
 
