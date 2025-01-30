@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { hash } from 'bcrypt';
 import { Model } from 'mongoose';
+import { Role } from 'src/resources/auth/enums/role.enum';
 import { User, UserDocument } from 'src/resources/user/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FullUpdateUserDto } from './dto/full-update-user.dto';
@@ -45,6 +46,18 @@ export class UserService {
     fromUser?: User,
   ): Promise<UserDocument> {
     const previousUser = await this.findOne(id);
+
+    // Si un utilisateur non admin essaye de modifier le rôle de son utilisateur ou d'un autre utilisateur : bloquer la requête
+    if (previousUser.role !== updateUserDto.role && updateUserDto.role === Role.ADMIN && (!fromUser || fromUser.role !== Role.ADMIN)) {
+      throw new ForbiddenException('Forbidden');
+    }
+
+    // Si le mot de passe est modifié : encrypter le nouveau mot de passe
+    if (updateUserDto.password) {
+      const hashedPassword = await hash(updateUserDto.password, 10);
+      updateUserDto.password = hashedPassword;
+    }
+
     // Mettre à jour l'utilisateur
     await this.userModel.findByIdAndUpdate(id, updateUserDto).exec();
     const updatedUser = await this.findOne(id);
