@@ -64,7 +64,8 @@ export class TicTacToeGateway {
     }
 
     // On rejoint la room
-    socket.join(ticTacToeId);
+    await socket.join(ticTacToeId);
+
     this.server.to(ticTacToeId).emit('ticTacToeJoined', ticTacToe);
 
     return ticTacToe;
@@ -132,7 +133,14 @@ export class TicTacToeGateway {
     @MessageBody() updateTicTacToeDto: UpdateTicTacToeDto,
   ) {
     // On vérifie que le joueur passe bien par la room de la partie pour jouer
-    if (!this.server.sockets.adapter.rooms[updateTicTacToeDto._id] || !this.server.sockets.adapter.rooms[updateTicTacToeDto._id].sockets[socket.id]) {
+    if (
+      !this.server.sockets.adapter.rooms.has(updateTicTacToeDto._id) ||
+      !this.server.sockets.adapter.rooms
+        .get(updateTicTacToeDto._id)!
+        .has(socket.id)
+    ) {
+      console.debug(this.server.sockets.adapter.rooms);
+      console.debug(socket.id);
       throw new WsException('Forbidden');
     }
 
