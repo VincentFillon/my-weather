@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import mongoose, { HydratedDocument, Types } from 'mongoose';
 import { Role } from 'src/resources/auth/enums/role.enum';
 import { Mood } from '../../mood/entities/mood.entity';
 
@@ -21,7 +21,7 @@ export class User {
   @Prop()
   image?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Mood' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Mood' })
   mood: Mood | null = null;
 
   @Prop()

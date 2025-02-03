@@ -73,7 +73,7 @@ export class UserGateway {
   ) {
     const currentUser = (socket as any).user;
     if (currentUser.sub !== user._id && currentUser.role !== Role.ADMIN) {
-      throw new WsException('Unauthorized');
+      throw new WsException('Forbidden');
     }
 
     let currentUserEntity: User | null = null;
