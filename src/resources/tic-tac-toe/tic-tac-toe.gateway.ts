@@ -39,6 +39,37 @@ export class TicTacToeGateway {
     return ticTacToe;
   }
 
+  @SubscribeMessage('joinTicTacToe')
+  async joinGame(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() ticTacToeId: string,
+  ) {
+    const ticTacToe = await this.ticTacToeService.findOne(ticTacToeId);
+    if (!ticTacToe) {
+      throw new WsException('Partie introuvable');
+    }
+    // On vérifie que le joueur qui veut jouer est bien le joueur X ou O de la partie
+    const currentUser = (socket as any).user;
+    if (
+      currentUser.sub !== ticTacToe.playerX._id.toString() &&
+      (!ticTacToe.playerO ||
+        currentUser.sub !== ticTacToe.playerO._id.toString())
+    ) {
+      console.log(
+        'Le joueur ' +
+          currentUser.sub +
+          ' a essayé de jouer sans être dans la partie',
+      );
+      throw new WsException('Forbidden');
+    }
+
+    // On rejoint la room
+    socket.join(ticTacToeId);
+    this.server.to(ticTacToeId).emit('ticTacToeJoined', ticTacToe);
+
+    return ticTacToe;
+  }
+
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
   @SubscribeMessage('findAllTicTacToe')
@@ -100,9 +131,15 @@ export class TicTacToeGateway {
     @ConnectedSocket() socket: Socket,
     @MessageBody() updateTicTacToeDto: UpdateTicTacToeDto,
   ) {
+    // On vérifie que le joueur passe bien par la room de la partie pour jouer
+    if (!this.server.sockets.adapter.rooms[updateTicTacToeDto._id] || !this.server.sockets.adapter.rooms[updateTicTacToeDto._id].sockets[socket.id]) {
+      throw new WsException('Forbidden');
+    }
+
     const ticTacToe = await this.findOne(updateTicTacToeDto._id);
 
     // On vérifie que le joueur qui veut jouer est bien le joueur X ou O de la partie
+    // TODO: ce test n'est plus utilise suite à la mise en place des rooms. Le retirer ?
     const currentUser = (socket as any).user;
     if (
       currentUser.sub !== ticTacToe.playerX._id.toString() &&
