@@ -6,12 +6,13 @@ import {
   Put,
   Request,
   UnauthorizedException,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { LoginResponse } from 'src/resources/auth/dto/login.response';
+import { UpdateDisplayNameDto } from 'src/resources/auth/dto/update-display-name.dto';
 import { UpdateImageDto } from 'src/resources/auth/dto/update-image.dto';
 import { User } from 'src/resources/user/entities/user.entity';
 import { AuthService } from './auth.service';
@@ -23,7 +24,7 @@ import { UpdateUsernameDto } from './dto/update-username.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('login')
@@ -108,7 +109,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: "Nom d'utilisateur mis à jour avec succès",
-    type: User
+    type: User,
   })
   @ApiResponse({
     status: 400,
@@ -125,15 +126,40 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Put('display-name')
+  @ApiOperation({
+    summary: 'Mettre à jour le pseudonyme',
+    description: 'Permet à un utilisateur de modifier son pseudonyme',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pseudonyme mis à jour avec succès',
+    type: User,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Pseudonyme invalide (ex: déjà utilisé ou vide)',
+  })
+  async updateDisplayName(
+    @Request() req,
+    @Body() updateDisplayNameDto: UpdateDisplayNameDto,
+  ) {
+    return this.authService.updateUsername(
+      req.user.sub,
+      updateDisplayNameDto.displayName,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Put('image')
   @ApiOperation({
     summary: "Mettre à jour l'image de profil",
-    description: "Permet à un utilisateur de modifier son image de profil",
+    description: 'Permet à un utilisateur de modifier son image de profil',
   })
   @ApiResponse({
     status: 200,
     description: "Image de l'utilisateur mise à jour avec succès",
-    type: User
+    type: User,
   })
   @ApiResponse({
     status: 400,

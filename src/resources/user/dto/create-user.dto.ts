@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsStrongPassword } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
 import { Role } from 'src/resources/auth/enums/role.enum';
 
 export class CreateUserDto {
@@ -6,14 +6,10 @@ export class CreateUserDto {
   username: string;
 
   @IsNotEmpty()
-  @IsStrongPassword({
-    minLength: 8,
-    minLowercase: 1,
-    minNumbers: 1,
-    minUppercase: 1,
-    minSymbols: 1,
-  })
   password: string;
+
+  @IsNotEmpty()
+  displayName: string;
 
   @IsOptional()
   @IsEnum(Role)

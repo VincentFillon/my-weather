@@ -41,6 +41,7 @@ export class AuthService {
     const user = await this.userService.create({
       username: registerDto.username,
       password: registerDto.password,
+      displayName: registerDto.username,
       role: Role.USER, // Par défaut, les nouveaux utilisateurs ont le rôle USER
     });
 
@@ -70,10 +71,10 @@ export class AuthService {
       expiresIn: `${expiresIn}s`,
     });
 
-    return { 
-      user, 
+    return {
+      user,
       token,
-      expiresAt 
+      expiresAt,
     };
   }
 
@@ -87,6 +88,18 @@ export class AuthService {
     }
 
     return this.userService.update(userId, { _id: userId, username });
+  }
+
+  async updateDisplayName(
+    userId: string,
+    displayName: string,
+  ): Promise<UserDocument> {
+    const existingUser = await this.userService.findByDisplayName(displayName);
+    if (existingUser && existingUser._id.toString() !== userId) {
+      throw new ConflictException('Ce pseudonyme est déjà utilisé');
+    }
+
+    return this.userService.update(userId, { _id: userId, displayName });
   }
 
   async updateImage(userId: string, image: string): Promise<UserDocument> {
