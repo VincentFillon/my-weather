@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { hash } from 'bcrypt';
@@ -9,11 +9,21 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { FullUpdateUserDto } from './dto/full-update-user.dto';
 
 @Injectable()
-export class UserService {
+export class UserService implements OnModuleInit {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private eventEmitter: EventEmitter2,
   ) {}
+
+  onModuleInit() {
+    // Patch pour les utilisateurs sans displayName
+    this.userModel.find({ displayName: null }).exec().then((users) => {
+      users.forEach((user) => {
+        user.displayName = user.username;
+        user.save();
+      });
+    });
+  }
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
     const hashedPassword = await hash(createUserDto.password, 10);
@@ -34,6 +44,10 @@ export class UserService {
 
   findByUsername(username: string): Promise<UserDocument> {
     return this.userModel.findOne({ username }).populate('mood').exec();
+  }
+
+  findByDisplayName(displayName: string): Promise<UserDocument> {
+    return this.userModel.findOne({ displayName }).populate('mood').exec();
   }
 
   findByMood(moodId: string): Promise<UserDocument[]> {
