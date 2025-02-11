@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument, Types } from 'mongoose';
 import { User } from 'src/resources/user/entities/user.entity';
 
-export type TicTacToeValue = 'X' | 'O' | '';
+export type TicTacToeValue = '' | 'X' | 'O';
 
 export type TicTacToeDocument = HydratedDocument<TicTacToe>;
 
@@ -18,6 +18,9 @@ export class TicTacToe {
 
   @Prop({ type: [String], default: Array(9).fill('') })
   grid: TicTacToeValue[] = Array(9).fill('');
+
+  @Prop({ required: true })
+  firstPlayer: 'X' | 'O';
 
   @Prop({ type: Number, default: 1 })
   turn: number = 1;

@@ -33,9 +33,33 @@ export class TicTacToeGateway {
     description:
       "Permet à un utilisateur de démarrer une nouvelle partie de morpion avec un autre utilisateur ou contre l'ordinateur",
   })
-  async create(@MessageBody() createTicTacToeDto: CreateTicTacToeDto) {
+  async create(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() createTicTacToeDto: CreateTicTacToeDto,
+  ) {
     const ticTacToe = await this.ticTacToeService.create(createTicTacToeDto);
-    this.server.emit('ticTacToeCreated', ticTacToe);
+
+    // Si le joueur n'est pas le joueur X ou O de la partie, on notifie de la création de la partie à tout le monde
+    const currentUser = (socket as any).user;
+    if (
+      currentUser.sub !== ticTacToe.playerX._id.toString() &&
+      (!ticTacToe.playerO ||
+        currentUser.sub !== ticTacToe.playerO._id.toString())
+    ) {
+      this.server.emit('ticTacToeCreated', ticTacToe);
+
+      return ticTacToe;
+    }
+
+    // Sinon on rejoint automatiquement la room de la partie et on notifie les joueurs de la room uniquement
+
+    const ticTacToeId = ticTacToe._id.toString();
+    // On rejoint la room
+    await socket.join(ticTacToeId);
+
+    this.server.to(ticTacToeId).emit('ticTacToeJoined', ticTacToe);
+    this.server.to(ticTacToeId).emit('ticTacToeCreated', ticTacToe);
+
     return ticTacToe;
   }
 
@@ -168,7 +192,9 @@ export class TicTacToeGateway {
         updateTicTacToeDto,
         currentUser.sub,
       );
-      this.server.emit('ticTacToeUpdated', updatedTicTacToe);
+      this.server
+        .in(updateTicTacToeDto._id)
+        .emit('ticTacToeUpdated', updatedTicTacToe);
 
       if (updatedTicTacToe.isFinished) {
         const leaderboard = await this.ticTacToeService.leaderboard();
