@@ -144,7 +144,7 @@ export class AuthController {
     @Request() req,
     @Body() updateDisplayNameDto: UpdateDisplayNameDto,
   ) {
-    return this.authService.updateUsername(
+    return this.authService.updateDisplayName(
       req.user.sub,
       updateDisplayNameDto.displayName,
     );
