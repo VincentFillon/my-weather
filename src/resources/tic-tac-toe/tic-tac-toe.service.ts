@@ -8,9 +8,12 @@ import {
 } from 'src/resources/tic-tac-toe/entities/tic-tac-toe-player.entity';
 import {
   TicTacToe,
-  TicTacToeDocument
+  TicTacToeDocument,
 } from 'src/resources/tic-tac-toe/entities/tic-tac-toe.entity';
-import { computerMoveMinMax, isFinished } from 'src/resources/tic-tac-toe/tic-tac-toe.utils';
+import {
+  computerMoveMinMax,
+  isFinished,
+} from 'src/resources/tic-tac-toe/tic-tac-toe.utils';
 import { User } from 'src/resources/user/entities/user.entity';
 import { CreateTicTacToeDto } from './dto/create-tic-tac-toe.dto';
 import { UpdateTicTacToeDto } from './dto/update-tic-tac-toe.dto';
@@ -37,6 +40,11 @@ export class TicTacToeService {
         : null,
       firstPlayer: Math.random() < 0.5 ? 'X' : 'O',
     });
+    // Si le premier joueur à jouer est l'ordinateur : on fait son coup directement
+    if (ticTacToe.firstPlayer === 'O' && !ticTacToe.playerO) {
+      computerMoveMinMax(ticTacToe, 'X');
+      ticTacToe.turn++;
+    }
     await ticTacToe.save();
     return this.findOne(ticTacToe._id.toString());
   }

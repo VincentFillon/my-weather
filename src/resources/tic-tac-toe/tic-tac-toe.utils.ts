@@ -224,18 +224,18 @@ export const computerMoveMinMax = (
   ticTacToe: TicTacToeDocument,
   player: 'X' | 'O',
 ): TicTacToeDocument => {
-  const grid = ticTacToe.grid;
+  // On créé une copie de la grille de jeu (pour ne pas modifier l'original lors des itérations)
+  const grid = [...ticTacToe.grid];
 
   const aiPlayer = player === 'O' ? 'X' : 'O';
 
-  // Si le joueur n'a pas déjà gagné et que la partie n'est pas terminée, on fait jouer l'ordinateur
-  if (ticTacToe.turn <= 9 && !winning(grid, player)) {
-    const index = minimax(grid, aiPlayer).index;
-    if (index != null) {
-      ticTacToe.grid[index] = aiPlayer;
-      ticTacToe.turn++;
-    }
+  const index = minimax(grid, aiPlayer).index;
+  // Si un coup a été trouvé, on le joue (sur la grille de jeu originale)
+  if (index != null) {
+    ticTacToe.grid[index] = aiPlayer;
+    ticTacToe.turn++;
   }
+  // Si aucun coup n'est trouvé c'est que la partie est terminée donc on ne fait rien
 
   return ticTacToe;
 };
