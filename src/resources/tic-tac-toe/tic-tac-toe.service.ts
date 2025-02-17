@@ -43,7 +43,6 @@ export class TicTacToeService {
     // Si le premier joueur à jouer est l'ordinateur : on fait son coup directement
     if (ticTacToe.firstPlayer === 'O' && !ticTacToe.playerO) {
       computerMoveMinMax(ticTacToe);
-      ticTacToe.turn++;
     }
     await ticTacToe.save();
     return this.findOne(ticTacToe._id.toString());
