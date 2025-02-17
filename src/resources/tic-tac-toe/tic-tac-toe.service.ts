@@ -42,7 +42,7 @@ export class TicTacToeService {
     });
     // Si le premier joueur à jouer est l'ordinateur : on fait son coup directement
     if (ticTacToe.firstPlayer === 'O' && !ticTacToe.playerO) {
-      computerMoveMinMax(ticTacToe, 'X');
+      computerMoveMinMax(ticTacToe);
       ticTacToe.turn++;
     }
     await ticTacToe.save();
@@ -181,7 +181,7 @@ export class TicTacToeService {
       // Ancienne methode
       // computerMove(ticTacToe);
       // ticTacToe.turn++;
-      computerMoveMinMax(ticTacToe, updateTicTacToeDto.player);
+      computerMoveMinMax(ticTacToe);
       isFinished(ticTacToe);
     }
 

@@ -8,7 +8,7 @@ import {
  * @param grid Grille de jeu
  * @returns Liste des index des cases vides
  */
-export const avail = (grid: TicTacToeValue[]) => {
+export const avail = (grid: TicTacToeValue[]): number[] => {
   return grid.reduce((p, c, i) => (c === '' ? p.concat([i]) : p), []);
 };
 
@@ -54,6 +54,7 @@ export const minimax = (
   grid: TicTacToeValue[],
   player: 'X' | 'O',
   aiPlayer: 'X' | 'O' = 'O',
+  depth: number = 0,
 ): MinimaxResult => {
   // On détermine qui est le joueur humain
   const huPlayer = aiPlayer === 'X' ? 'O' : 'X';
@@ -63,13 +64,13 @@ export const minimax = (
   // Si le joueur humain a gagné, on ne retourne pas d'index et on attribue un score de -10
   if (winning(grid, huPlayer)) {
     return {
-      score: -10,
+      score: -10 + depth, // Le résultat est atténué en fonction du nombre de coups qu'il a fallu pour y parvenir
     };
   }
   // Si l'ordinateur a gagné, on ne retourne pas d'index et on attribue un score de +10
   else if (winning(grid, aiPlayer)) {
     return {
-      score: 10,
+      score: 10 - depth, // Le résultat est atténué en fonction du nombre de coups qu'il a fallu pour y parvenir
     };
   }
   // Si la partie est terminée, on ne retourne pas d'index et on attribue un score de 0
@@ -82,19 +83,21 @@ export const minimax = (
   // On crée un tableau pour stocker le score de chaque coup possible
   const moves: MinimaxResult[] = [];
   for (var i = 0; i < emptyCells.length; i++) {
+    // On créé un clone de la grille de jeu pour dissocier les scénarios entre eux
+    const gridClone = [...grid];
     // On initialise le prochain coup possible
-    const move = {
+    const move: MinimaxResult = {
       index: emptyCells[i],
       score: 0,
     };
-    grid[emptyCells[i]] = player;
+    gridClone[emptyCells[i]] = player;
 
-    // On simule le coup du joueur suivant pour récupérer le score
+    // On simule le coup du joueur suivant pour récupérer calculer le score cumulé
     if (player == aiPlayer) {
-      const g = minimax(grid, huPlayer, aiPlayer);
+      const g = minimax(gridClone, huPlayer, aiPlayer, depth + 1);
       move.score = g.score;
     } else {
-      const g = minimax(grid, aiPlayer, aiPlayer);
+      const g = minimax(gridClone, aiPlayer, aiPlayer, depth + 1);
       move.score = g.score;
     }
 
@@ -102,22 +105,12 @@ export const minimax = (
   }
 
   // On récupère le coup avec le meilleur score
-  let bestMove: number;
-  if (player === aiPlayer) {
-    let bestScore = -10000;
-    for (let i = 0; i < moves.length; i++) {
-      if (moves[i].score > bestScore) {
-        bestScore = moves[i].score;
-        bestMove = i;
-      }
-    }
-  } else {
-    let bestScore = 10000;
-    for (let i = 0; i < moves.length; i++) {
-      if (moves[i].score < bestScore) {
-        bestScore = moves[i].score;
-        bestMove = i;
-      }
+  let bestMove = 0;
+  let bestScore = -10;
+  for (let i = 0; i < moves.length; i++) {
+    if (moves[i].score > bestScore) {
+      bestScore = moves[i].score;
+      bestMove = i;
     }
   }
 
@@ -222,14 +215,12 @@ export const computerMove = (
  */
 export const computerMoveMinMax = (
   ticTacToe: TicTacToeDocument,
-  player: 'X' | 'O',
+  aiPlayer: 'X' | 'O' = 'O',
 ): TicTacToeDocument => {
   // On créé une copie de la grille de jeu (pour ne pas modifier l'original lors des itérations)
   const grid = [...ticTacToe.grid];
 
-  const aiPlayer = player === 'O' ? 'X' : 'O';
-
-  const index = minimax(grid, aiPlayer).index;
+  const index = minimax(grid, aiPlayer, aiPlayer).index;
   // Si un coup a été trouvé, on le joue (sur la grille de jeu originale)
   if (index != null) {
     ticTacToe.grid[index] = aiPlayer;
