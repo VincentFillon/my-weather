@@ -1,7 +1,8 @@
 import { HttpService } from '@nestjs/axios';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Controller, Get, Inject, Param } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Cache } from 'cache-manager';
 import { plainToClass } from 'class-transformer';
 import { firstValueFrom } from 'rxjs';
 import { PublicHoliday } from 'src/resources/public-holidays/dto/public-holiday';
@@ -11,11 +12,7 @@ import { PublicHoliday } from 'src/resources/public-holidays/dto/public-holiday'
 export class PublicHolidaysController {
   private readonly API_URL = 'https://calendrier.api.gouv.fr/jours-feries';
 
-  private publicHolidays?: PublicHoliday[];
-  private publicHolidaysPerYear: Map<string, PublicHoliday[]> = new Map<
-    string,
-    PublicHoliday[]
-  >();
+  private readonly CACHE_TTL = 1000 * 60 * 60 * 24; // 1 jour (en ms)
 
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -32,7 +29,7 @@ export class PublicHolidaysController {
     const cachedPublicHolidays =
       await this.cacheManager.get<PublicHoliday[]>('publicHolidays');
     if (cachedPublicHolidays && cachedPublicHolidays.length > 0)
-      return cachedPublicHolidays;
+      return cachedPublicHolidays.map((publicHoliday) => plainToClass(PublicHoliday, publicHoliday));
 
     let publicHolidays: PublicHoliday[] = [];
 
@@ -47,7 +44,11 @@ export class PublicHolidaysController {
         plainToClass(PublicHoliday, { date, name }),
       );
 
-      await this.cacheManager.set('publicHolidays', publicHolidays);
+      await this.cacheManager.set(
+        'publicHolidays',
+        publicHolidays,
+        this.CACHE_TTL,
+      );
     }
 
     return publicHolidays;
@@ -63,8 +64,9 @@ export class PublicHolidaysController {
     const cachedPublicHolidays = await this.cacheManager.get<PublicHoliday[]>(
       `publicHolidays${year}`,
     );
-    if (cachedPublicHolidays && cachedPublicHolidays.length > 0)
-      return cachedPublicHolidays;
+    if (cachedPublicHolidays && cachedPublicHolidays.length > 0) {
+      return cachedPublicHolidays.map((publicHoliday) => plainToClass(PublicHoliday, publicHoliday));
+    }
 
     let publicHolidays: PublicHoliday[] = [];
 
@@ -79,7 +81,11 @@ export class PublicHolidaysController {
         plainToClass(PublicHoliday, { date, name }),
       );
 
-      await this.cacheManager.set(`publicHolidays${year}`, publicHolidays);
+      await this.cacheManager.set(
+        `publicHolidays${year}`,
+        publicHolidays,
+        this.CACHE_TTL,
+      );
     }
 
     return publicHolidays;
@@ -106,7 +112,7 @@ export class PublicHolidaysController {
     }
     const yearPublicHolidays = await this.findForYear(year);
 
-    const todayTimestamp = new Date(year).getTime();
+    const todayTimestamp = new Date().getTime();
     let closestPublicHoliday = yearPublicHolidays.reduce(
       (closest, publicHoliday) => {
         const publicHolidayTimestamp = publicHoliday.date.getTime();
