@@ -1,3 +1,4 @@
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -11,6 +12,7 @@ import { join } from 'path';
 import { JwtStrategy } from 'src/config/jwt.strategy';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { PublicHolidaysModule } from 'src/resources/public-holidays/public-holidays.module';
 import { TicTacToeModule } from 'src/resources/tic-tac-toe/tic-tac-toe.module';
 import { UserHistoryModule } from 'src/resources/user-history/user-history.module';
 import { TasksService } from 'src/tasks/tasks.service';
@@ -38,12 +40,14 @@ import { UserModule } from './resources/user/user.module';
     }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    CacheModule.register(),
     AuthModule,
     MoodModule,
     UserModule,
     UserHistoryModule,
     UploadModule,
     TicTacToeModule,
+    PublicHolidaysModule,
   ],
   controllers: [AppController],
   providers: [
