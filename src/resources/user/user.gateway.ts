@@ -109,7 +109,7 @@ export class UserGateway {
 
     const previousUser = await this.findOne(updateUserDto._id);
     // Si l'humeur de l'utilisateur n'a pas changé, on ne fait rien
-    if (!updateUserDto.mood || updateUserDto.mood._id === previousUser.mood?._id) return currentUserEntity;
+    if (!updateUserDto.mood || updateUserDto.mood._id === previousUser.mood?._id) return previousUser;
 
     const updatedUser = await this.userService.update(
       updateUserDto._id,
