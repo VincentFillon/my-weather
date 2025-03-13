@@ -1,8 +1,10 @@
-import { UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -21,11 +23,43 @@ import { TicTacToeService } from './tic-tac-toe.service';
 @ApiTags('TicTacToe WebSocket')
 @UseGuards(JwtAuthGuard)
 @WebSocketGateway()
-export class TicTacToeGateway {
+export class TicTacToeGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
+  private logger = new Logger(TicTacToeGateway.name);
+
   @WebSocketServer()
   server: Server;
 
+  connectedUsers: Map<string, Socket> = new Map<string, Socket>();
+
   constructor(private readonly ticTacToeService: TicTacToeService) {}
+
+  async handleConnection(socket: Socket) {
+    try {
+      const user = (socket as any).user;
+      if (user && user.sub) {
+        this.connectedUsers.set(user.sub, socket);
+        this.logger.log(
+          `Utilisateur ${user.sub} connecté à la socket ${socket.id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error during connection:', error);
+      socket.disconnect(true);
+    }
+  }
+
+  async handleDisconnect(socket: Socket) {
+    this.connectedUsers.forEach((value, key) => {
+      if (value === socket) {
+        this.connectedUsers.delete(key);
+        this.logger.log(
+          `Utilisateur ${key} déconnecté de la socket ${socket.id}`,
+        );
+      }
+    });
+  }
 
   @SubscribeMessage('createTicTacToe')
   @ApiOperation({
@@ -57,6 +91,28 @@ export class TicTacToeGateway {
     // On rejoint la room
     await socket.join(ticTacToeId);
 
+    // On cherche la socket de l'autre joueur
+    let opponentSocket: Socket | undefined = undefined;
+    if (ticTacToe.playerX._id.toString() === currentUser.sub) {
+      // L'adversaire est O
+      if (ticTacToe.playerO) {
+        opponentSocket = this.connectedUsers.get(
+          ticTacToe.playerO._id.toString(),
+        );
+      }
+    } else if (ticTacToe.playerO._id.toString() === currentUser.sub) {
+      // L'adversaire est X
+      opponentSocket = this.connectedUsers.get(
+        ticTacToe.playerX._id.toString(),
+      );
+    }
+
+    // On fait rejoindre l'adversaire à la room
+    if (opponentSocket) {
+      await opponentSocket.join(ticTacToeId);
+    }
+
+    // On notifie les joueurs de la room de la création de la partie
     this.server.to(ticTacToeId).emit('ticTacToeJoined', ticTacToe);
     this.server.to(ticTacToeId).emit('ticTacToeCreated', ticTacToe);
 

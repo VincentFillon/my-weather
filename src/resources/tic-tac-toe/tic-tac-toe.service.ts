@@ -69,7 +69,7 @@ export class TicTacToeService {
     isFinished?: boolean,
   ): Promise<TicTacToeDocument[]> {
     const query: RootFilterQuery<TicTacToe> = {
-      user: new Types.ObjectId(userId),
+      $or: [{ playerX: { _id: new Types.ObjectId(userId) } }, { playerO: { _id: new Types.ObjectId(userId) } }],
     };
     if (isFinished != null) {
       query.isFinished = isFinished;
