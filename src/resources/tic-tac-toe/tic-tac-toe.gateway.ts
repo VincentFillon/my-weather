@@ -111,6 +111,10 @@ export class TicTacToeGateway
     if (opponentSocket) {
       await opponentSocket.join(ticTacToeId);
     }
+    // Si on ne trouve pas la socket de l'adversaire, on notifie de la création de la partie à tout le monde
+    else {
+      this.server.emit('ticTacToeCreated', ticTacToe);
+    }
 
     // On notifie les joueurs de la room de la création de la partie
     this.server.to(ticTacToeId).emit('ticTacToeJoined', ticTacToe);
