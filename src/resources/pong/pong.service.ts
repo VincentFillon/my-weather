@@ -9,6 +9,7 @@ import { Model, RootFilterQuery, Types } from 'mongoose';
 import { CreatePongDto } from 'src/resources/pong/dto/create-pong.dto';
 import { UpdatePongDto } from 'src/resources/pong/dto/update-pong.dto';
 import { Pong, PongDocument } from 'src/resources/pong/entities/pong.entity';
+import { ballMaxVelocity, ballMinVelocity, fieldSize, logRandomInt } from 'src/resources/pong/pong.utils';
 
 @Injectable()
 export class PongService {
@@ -17,18 +18,27 @@ export class PongService {
   constructor(@InjectModel(Pong.name) private pongModel: Model<Pong>) {}
 
   async create(createPongDto: CreatePongDto): Promise<PongDocument> {
+    // Ajout de paramètres aléatoires (direction et vitesse initale de la balle)
+    const velocity = Math.max(ballMinVelocity, logRandomInt(ballMaxVelocity));
+    const vX = Math.random() < 0.5 ? -1 : 1;
+    // On calcule l'angle de la balle en privilégiant le centre de la table
+    const randomYAngle = Math.max(1, logRandomInt(fieldSize.y / 2));
+    let vY = Math.random() < 0.5 ? 1 : -1;
+    vY *= 1 + 1 / randomYAngle;
+
     const pong = new this.pongModel({
       player1: { _id: new Types.ObjectId(createPongDto.player1._id) },
       player2: createPongDto.player2
         ? { _id: new Types.ObjectId(createPongDto.player2._id) }
         : null,
-      player1RacketPosition: { x: 0, y: 75 },
+      player1RacketPosition: { x: 0, y: fieldSize.y / 2 },
       player1RacketVelocity: 0,
-      player2RacketPosition: { x: 200, y: 75 },
+      player2RacketPosition: { x: fieldSize.x, y: fieldSize.y / 2 },
       player2RacketVelocity: 0,
-      ballPosition: { x: 100, y: 75 },
-      ballDirection: Math.random() < 0.5 ? { x: 101, y: 75 } : { x: 99, y: 75 },
-      ballVelocity: 5,
+      ballPosition: { x: fieldSize.x / 2, y: fieldSize.y / 2 },
+      ballVx: vX * velocity,
+      ballVy: vY * velocity,
+      ballVelocity: velocity,
     });
     await pong.save();
     return this.findOne(pong._id.toString());
@@ -129,8 +139,11 @@ export class PongService {
     if (pongUpdates.ballPosition) {
       pong.ballPosition = pongUpdates.ballPosition;
     }
-    if (pongUpdates.ballDirection) {
-      pong.ballDirection = pongUpdates.ballDirection;
+    if (pongUpdates.ballVx) {
+      pong.ballVx = pongUpdates.ballVx;
+    }
+    if (pongUpdates.ballVy) {
+      pong.ballVy = pongUpdates.ballVy;
     }
     if (pongUpdates.ballVelocity) {
       pong.ballVelocity = pongUpdates.ballVelocity;
@@ -147,6 +160,8 @@ export class PongService {
     if (pongUpdates.isFinished) {
       pong.isFinished = pongUpdates.isFinished;
     }
+
+    await pong.save();
 
     return pong;
   }

@@ -1,4 +1,5 @@
 import { Logger, UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ConnectedSocket,
@@ -20,7 +21,13 @@ import { FindPongByUserDto } from 'src/resources/pong/dto/find-pong-by-user.dto'
 import { UpdatePongDto } from 'src/resources/pong/dto/update-pong.dto';
 import { PongDocument } from 'src/resources/pong/entities/pong.entity';
 import { PongService } from 'src/resources/pong/pong.service';
-import { startGameLoop } from 'src/resources/pong/pong.utils';
+import {
+  checkRacketCollision,
+  checkScore,
+  moveIAPlayer,
+  saveInterval,
+  updateBallPosition,
+} from 'src/resources/pong/pong.utils';
 
 @ApiTags('Pong WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -33,35 +40,48 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   connectedUsers: Map<string, Socket> = new Map<string, Socket>();
 
+  currentGames: Map<string, PongDocument> = new Map<string, PongDocument>();
   runningGames: Map<string, NodeJS.Timeout> = new Map<string, NodeJS.Timeout>();
 
-  constructor(private readonly pongService: PongService) {}
+  constructor(
+    private readonly pongService: PongService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  async handleConnection(socket: Socket) {
+  async handleConnection(client: Socket) {
     try {
-      const user = (socket as any).user;
-      if (user && user.sub) {
-        this.connectedUsers.set(user.sub, socket);
-        this.logger.log(
-          `Utilisateur ${user.sub} connecté à la socket ${socket.id}`,
-        );
+      const token = client.handshake?.headers?.authorization;
+      if (token) {
+        const user = this.jwtService.verify(token, {
+          secret: process.env.JWT_SECRET,
+        });
+        if (user && user.sub) {
+          this.connectedUsers.set(user.sub, client);
+          this.logger.log(
+            `Utilisateur ${user.sub} connecté à la socket ${client.id}`,
+          );
+        }
       }
     } catch (error) {
       this.logger.error('Error during connection:', error);
-      socket.disconnect(true);
+      client.disconnect(true);
     }
   }
 
-  async handleDisconnect(socket: Socket) {
+  async handleDisconnect(client: Socket) {
     for (const [userId, socket] of this.connectedUsers) {
-      if (socket === socket) {
+      if (socket === client) {
         this.connectedUsers.delete(userId);
         this.logger.log(
-          `Utilisateur ${userId} déconnecté de la socket ${socket.id}`,
+          `Utilisateur ${userId} déconnecté de la socket ${client.id}`,
         );
         // On stoppe toutes les parties démarrées avec/par cet utilisateur
         const runningGames = await this.pongService.findByUser(userId, false);
         for (const game of runningGames) {
+          void this.onPauseGame(
+            game._id.toString(),
+            game.player1._id.toString() === userId ? 1 : 2,
+          );
         }
       }
     }
@@ -82,6 +102,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Si le joueur n'est pas le joueur 1 ou 2 de la partie, on notifie de la création de la partie à tout le monde
     const currentUser = (socket as any).user;
     if (
+      currentUser &&
       currentUser.sub !== pong.player1._id.toString() &&
       (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
     ) {
@@ -99,12 +120,12 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // On cherche la socket de l'autre joueur
     let opponentSocket: Socket | undefined = undefined;
     if (pong.player1._id.toString() === currentUser.sub) {
-      // L'adversaire est O
+      // L'adversaire est le joueur 2
       if (pong.player2) {
         opponentSocket = this.connectedUsers.get(pong.player2._id.toString());
       }
     } else if (pong.player2._id.toString() === currentUser.sub) {
-      // L'adversaire est X
+      // L'adversaire est le joueur 1
       opponentSocket = this.connectedUsers.get(pong.player1._id.toString());
     }
 
@@ -120,135 +141,6 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // On notifie les joueurs de la room de la création de la partie
     this.server.to(pongId).emit('pongCreated', pong);
     this.server.to(pongId).emit('pongJoined', pong);
-
-    return pong;
-  }
-
-  @SubscribeMessage('joinPong')
-  @ApiOperation({
-    summary: 'Rejoindre une partie de pong',
-    description: 'Rejoindre une partie de pong',
-  })
-  async joinGame(
-    @ConnectedSocket() socket: Socket,
-    @MessageBody() pongId: string,
-  ) {
-    const pong = await this.pongService.findOne(pongId);
-    if (!pong) {
-      throw new WsException('Partie introuvable');
-    }
-    // On vérifie que le joueur qui veut jouer est bien le joueur 1 ou 2 de la partie
-    const currentUser = (socket as any).user;
-    if (
-      currentUser.sub !== pong.player1._id.toString() &&
-      (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
-    ) {
-      console.log(
-        'Le joueur ' +
-          currentUser.sub +
-          ' a essayé de jouer sans être dans la partie',
-      );
-      throw new WsException('Forbidden');
-    }
-
-    // On rejoint la room
-    await socket.join(pongId);
-
-    this.server.to(pongId).emit('pongJoined', pong);
-
-    return pong;
-  }
-
-  @SubscribeMessage('pausePong')
-  @ApiOperation({
-    summary: 'Mettre en pause une partie de pong',
-    description: 'Mettre en pause une partie de pong',
-  })
-  async pauseGame(
-    @ConnectedSocket() socket: Socket,
-    @MessageBody() pongId: string,
-  ) {
-    const pong = await this.pongService.findOne(pongId);
-    if (!pong) {
-      throw new WsException('Partie introuvable');
-    }
-    // On vérifie que le joueur qui veut mettre la partie en pause est bien le joueur 1 ou 2 de la partie
-    const currentUser = (socket as any).user;
-    if (
-      currentUser.sub !== pong.player1._id.toString() &&
-      (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
-    ) {
-      console.log(
-        'Le joueur ' +
-          currentUser.sub +
-          ' a essayé de mettre en pause le jeu sans être dans la partie',
-      );
-      throw new WsException('Forbidden');
-    }
-
-    this.onPauseGame(pong);
-
-    return pong;
-  }
-
-  private async onPauseGame(game: PongDocument) {
-    if (this.runningGames.has(game._id.toString())) {
-      const previousRunningGame = this.runningGames.get(game._id.toString());
-      clearInterval(previousRunningGame);
-      this.runningGames.delete(game._id.toString());
-    }
-    if (!game.isPaused) {
-      this.pongService.update(game._id.toString(), { isPaused: true });
-    }
-
-    this.server.to(game._id.toString()).emit('pongPaused', game);
-  }
-
-  @SubscribeMessage('startPong')
-  @ApiOperation({
-    summary: '(Re)démarrer une partie de pong',
-    description: 'Démarrer (ou reprendre après une pause) une partie de pong',
-  })
-  async startGame(
-    @ConnectedSocket() socket: Socket,
-    @MessageBody() gameId: string,
-  ) {
-    const pong = await this.pongService.findOne(gameId);
-    if (!pong) {
-      throw new WsException('Partie introuvable');
-    }
-    // On vérifie que le joueur qui veut jouer est bien le joueur 1 ou 2 de la partie
-    const currentUser = (socket as any).user;
-    if (
-      currentUser.sub !== pong.player1._id.toString() &&
-      (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
-    ) {
-      console.log(
-        'Le joueur ' +
-          currentUser.sub +
-          ' a essayé de jouer sans être dans la partie',
-      );
-      throw new WsException('Forbidden');
-    }
-
-    // On vérifie que les 2 joueurs sont connectés à la socket avant de (re)démarrer la partie
-    const player1Socket = this.connectedUsers.get(pong.player1._id.toString());
-    const player2Socket = pong.player2
-      ? this.connectedUsers.get(pong.player2._id.toString())
-      : null;
-    if (!player1Socket || (pong.player2 && !player2Socket)) {
-      throw new WsException('Les 2 joueurs doivent rejoindre la partie');
-    }
-
-    // On (re)démarre la partie
-    if (this.runningGames.has(pong._id.toString())) {
-      const previousRunningGame = this.runningGames.get(pong._id.toString());
-      clearInterval(previousRunningGame);
-    }
-    this.runningGames.set(
-      pong._id.toString(),
-      startGameLoop(this.server, pong),
-    );
 
     return pong;
   }
@@ -304,6 +196,162 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return leaderboard;
   }
 
+  @SubscribeMessage('joinPong')
+  @ApiOperation({
+    summary: 'Rejoindre une partie de pong',
+    description: 'Rejoindre une partie de pong',
+  })
+  async joinGame(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() pongId: string,
+  ) {
+    const pong = await this.pongService.findOne(pongId);
+    if (!pong) {
+      throw new WsException('Partie introuvable');
+    }
+    // On vérifie que le joueur qui veut jouer est bien le joueur 1 ou 2 de la partie
+    const currentUser = (socket as any).user;
+    if (
+      currentUser &&
+      currentUser.sub !== pong.player1._id.toString() &&
+      (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
+    ) {
+      this.logger.warn(
+        'Le joueur ' +
+          currentUser.sub +
+          ' a essayé de jouer sans être dans la partie',
+      );
+      throw new WsException('Forbidden');
+    }
+
+    // On rejoint la room
+    await socket.join(pongId);
+
+    this.server.to(pongId).emit('pongJoined', pong);
+
+    return pong;
+  }
+
+  @SubscribeMessage('startPong')
+  @ApiOperation({
+    summary: '(Re)démarrer une partie de pong',
+    description: 'Démarrer (ou reprendre après une pause) une partie de pong',
+  })
+  async startGame(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() gameId: string,
+  ) {
+    const pong = await this.pongService.findOne(gameId);
+    if (!pong) {
+      throw new WsException('Partie introuvable');
+    }
+    // On vérifie que le joueur qui veut jouer est bien le joueur 1 ou 2 de la partie
+    const currentUser = (socket as any).user;
+    if (
+      currentUser &&
+      currentUser.sub !== pong.player1._id.toString() &&
+      (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
+    ) {
+      this.logger.warn(
+        'Le joueur ' +
+          currentUser.sub +
+          ' a essayé de jouer sans être dans la partie',
+      );
+      throw new WsException('Forbidden');
+    }
+
+    // On vérifie que les 2 joueurs sont connectés à la socket avant de (re)démarrer la partie
+    const player1Socket = this.connectedUsers.get(pong.player1._id.toString());
+    const player2Socket = pong.player2
+      ? this.connectedUsers.get(pong.player2._id.toString())
+      : null;
+    if (!player1Socket || (pong.player2 && !player2Socket)) {
+      throw new WsException('Les 2 joueurs doivent rejoindre la partie');
+    }
+
+    this.logger.log(
+      `[${pong._id.toString()}] Démarrage de la partie de pong...`,
+    );
+
+    // On (re)démarre la partie
+    if (this.runningGames.has(pong._id.toString())) {
+      const previousRunningGame = this.runningGames.get(pong._id.toString());
+      clearInterval(previousRunningGame);
+    }
+    // Envoi du signal de démarrage avec un compte à rebours de 3 sec
+    let countdown = 3;
+    const countdownInterval = setInterval(() => {
+      this.server.to(pong._id.toString()).emit('pongCountdown', countdown);
+      this.logger.log(
+        `[${pong._id.toString()}] Compte à rebours : ${countdown}`,
+      );
+      countdown--;
+
+      if (countdown < 0) {
+        clearInterval(countdownInterval);
+
+        let lastUpdate = Date.now();
+        let lastSave = Date.now();
+
+        pong.isPaused = false;
+
+        this.server.to(pong._id.toString()).emit('pongStarted', pong);
+
+        const gameLoop = setInterval(() => {
+          const now = Date.now();
+          const deltaTime = (now - lastUpdate) / 1000;
+          lastUpdate = now;
+
+          const updatedPong = this.currentGames.get(pong._id.toString());
+
+          // Mise à jour de la balle
+          updateBallPosition(updatedPong, deltaTime, this.logger);
+
+          // Déplacement de l'ordinateur (si pas de joueur 2)
+          if (!updatedPong.player2) {
+            moveIAPlayer(updatedPong, deltaTime);
+          }
+
+          // Vérification des collisions avec les raquettes
+          checkRacketCollision(updatedPong, this.logger);
+
+          // Vérification du score (si la balle sort du terrain)
+          checkScore(updatedPong);
+
+          this.currentGames.set(pong._id.toString(), updatedPong);
+
+          // Envoi des mises à jour aux joueurs
+          this.server.to(pong._id.toString()).emit('pongUpdated', updatedPong);
+
+          if (updatedPong.isFinished) {
+            clearInterval(gameLoop);
+            this.logger.log(`[${pong._id.toString()}] Partie de pong terminée`);
+            this.currentGames.delete(pong._id.toString());
+            this.runningGames.delete(pong._id.toString());
+            this.server
+              .to(updatedPong._id.toString())
+              .emit('pongFinished', updatedPong);
+          }
+
+          // Mise à jour de la partie
+          if (now - lastSave > saveInterval) {
+            this.logger.log(
+              `[${updatedPong._id.toString()}] Balle : { x: ${updatedPong.ballPosition.x}, y: ${updatedPong.ballPosition.y} } Raquette 1 : { x: ${updatedPong.player1RacketPosition.x}, y: ${updatedPong.player1RacketPosition.y} } Raquette 2 : { x: ${updatedPong.player2RacketPosition.x}, y: ${updatedPong.player2RacketPosition.y} }`,
+            );
+            void this.pongService.update(pong._id.toString(), updatedPong);
+            lastSave = now;
+          }
+        }, 1000 / 60); // ~60 FPS
+
+        this.logger.log(`[${pong._id.toString()}] Partie de pong démarrée`);
+        this.currentGames.set(pong._id.toString(), pong);
+        this.runningGames.set(pong._id.toString(), gameLoop);
+      }
+    }, 1000);
+
+    return pong;
+  }
+
   @SubscribeMessage('updatePong')
   @ApiOperation({
     summary: 'Mettre à jour une partie de pong',
@@ -319,21 +367,21 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       !this.server.sockets.adapter.rooms.has(updatePongDto._id) ||
       !this.server.sockets.adapter.rooms.get(updatePongDto._id)!.has(socket.id)
     ) {
-      console.debug(this.server.sockets.adapter.rooms);
-      console.debug(socket.id);
+      this.logger.debug(this.server.sockets.adapter.rooms);
+      this.logger.debug(socket.id);
       throw new WsException('Forbidden');
     }
 
-    const pong = await this.findOne(updatePongDto._id);
+    const pong = await this.pongService.findOne(updatePongDto._id);
 
     // On vérifie que le joueur qui veut jouer est bien le joueur 1 ou 2 de la partie
-    // TODO: ce test n'est plus utile suite à la mise en place des rooms. Le retirer ?
     const currentUser = (socket as any).user;
     if (
+      currentUser &&
       currentUser.sub !== pong.player1._id.toString() &&
       (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
     ) {
-      console.log(
+      this.logger.warn(
         'Le joueur ' +
           currentUser.sub +
           ' a essayé de jouer sans être dans la partie',
@@ -346,12 +394,89 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
         updatePongDto._id,
         updatePongDto,
       );
-      this.server.in(updatePongDto._id).emit('pongPlayerUpdated', updatedPong);
 
-      return updatedPong;
+      // Mise à jour de la position de la raquette dans la mémoire
+      const currentGame = this.currentGames.get(updatePongDto._id);
+      if (updatePongDto.player === 1) {
+        currentGame.player1RacketPosition = updatedPong.player1RacketPosition;
+        currentGame.player1RacketVelocity = updatedPong.player1RacketVelocity;
+      } else if (updatePongDto.player === 2) {
+        currentGame.player2RacketPosition = updatedPong.player2RacketPosition;
+        currentGame.player2RacketVelocity = updatedPong.player2RacketVelocity;
+      }
+
+      this.currentGames.set(updatePongDto._id, currentGame);
+
+      this.server.to(updatePongDto._id).emit('pongPlayerUpdated', currentGame);
+
+      return currentGame;
     } catch (error) {
       throw new WsException(error.message);
     }
+  }
+
+  @SubscribeMessage('pausePong')
+  @ApiOperation({
+    summary: 'Mettre en pause une partie de pong',
+    description: 'Mettre en pause une partie de pong',
+  })
+  async pauseGame(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() pongId: string,
+  ) {
+    const pong = await this.pongService.findOne(pongId);
+    if (!pong) {
+      throw new WsException('Partie introuvable');
+    }
+    // On vérifie que le joueur qui veut mettre la partie en pause est bien le joueur 1 ou 2 de la partie
+    const currentUser = (socket as any).user;
+    if (
+      currentUser &&
+      currentUser.sub !== pong.player1._id.toString() &&
+      (!pong.player2 || currentUser.sub !== pong.player2._id.toString())
+    ) {
+      this.logger.warn(
+        'Le joueur ' +
+          currentUser.sub +
+          ' a essayé de mettre en pause le jeu sans être dans la partie',
+      );
+      throw new WsException('Forbidden');
+    }
+
+    const updatedPong = await this.onPauseGame(
+      pong._id.toString(),
+      pong.player1._id.toString() === currentUser.sub ? 1 : 2,
+    );
+
+    return updatedPong;
+  }
+
+  private async onPauseGame(
+    gameId: string,
+    pausedBy?: 1 | 2,
+  ): Promise<PongDocument> {
+    let currentGame = this.currentGames.get(gameId);
+    if (!currentGame) currentGame = await this.pongService.findOne(gameId);
+
+    this.logger.log(`[${gameId}] Pause de la partie de pong`);
+
+    // Suppression de la partie de la mémoire
+    this.currentGames.delete(gameId);
+    // Arrêt du moteur de jeu
+    if (this.runningGames.has(gameId)) {
+      const previousRunningGame = this.runningGames.get(gameId);
+      clearInterval(previousRunningGame);
+      this.runningGames.delete(gameId);
+    }
+    // Mise à jour de la partie
+    if (!currentGame.isPaused) {
+      currentGame.isPaused = true;
+      currentGame.pausedBy = pausedBy;
+      currentGame = await this.pongService.update(gameId, currentGame);
+    }
+
+    this.server.to(gameId).emit('pongPaused', currentGame);
+    return currentGame;
   }
 
   @SubscribeMessage('removePong')

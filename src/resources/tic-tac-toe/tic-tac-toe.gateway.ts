@@ -1,4 +1,5 @@
 import { Logger, UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ConnectedSocket,
@@ -33,16 +34,24 @@ export class TicTacToeGateway
 
   connectedUsers: Map<string, Socket> = new Map<string, Socket>();
 
-  constructor(private readonly ticTacToeService: TicTacToeService) {}
+  constructor(
+    private readonly ticTacToeService: TicTacToeService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async handleConnection(socket: Socket) {
     try {
-      const user = (socket as any).user;
-      if (user && user.sub) {
-        this.connectedUsers.set(user.sub, socket);
-        this.logger.log(
-          `Utilisateur ${user.sub} connecté à la socket ${socket.id}`,
-        );
+      const token = socket.handshake?.headers?.authorization;
+      if (token) {
+        const user = this.jwtService.verify(token, {
+          secret: process.env.JWT_SECRET,
+        });
+        if (user && user.sub) {
+          this.connectedUsers.set(user.sub, socket);
+          this.logger.log(
+            `Utilisateur ${user.sub} connecté à la socket ${socket.id}`,
+          );
+        }
       }
     } catch (error) {
       this.logger.error('Error during connection:', error);
@@ -139,7 +148,7 @@ export class TicTacToeGateway
       (!ticTacToe.playerO ||
         currentUser.sub !== ticTacToe.playerO._id.toString())
     ) {
-      console.log(
+      this.logger.warn(
         'Le joueur ' +
           currentUser.sub +
           ' a essayé de jouer sans être dans la partie',
@@ -223,8 +232,8 @@ export class TicTacToeGateway
         .get(updateTicTacToeDto._id)!
         .has(socket.id)
     ) {
-      console.debug(this.server.sockets.adapter.rooms);
-      console.debug(socket.id);
+      this.logger.debug(this.server.sockets.adapter.rooms);
+      this.logger.debug(socket.id);
       throw new WsException('Forbidden');
     }
 
@@ -238,7 +247,7 @@ export class TicTacToeGateway
       (!ticTacToe.playerO ||
         currentUser.sub !== ticTacToe.playerO._id.toString())
     ) {
-      console.log(
+      this.logger.warn(
         'Le joueur ' +
           currentUser.sub +
           ' a essayé de jouer sans être dans la partie',
