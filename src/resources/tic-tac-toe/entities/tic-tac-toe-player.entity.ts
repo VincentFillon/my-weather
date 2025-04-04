@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument, Types } from 'mongoose';
 import {
-  PlayerGames,
-  PlayerGamesSchema,
-} from 'src/resources/tic-tac-toe/entities/player-games.entity';
+  TicTacToePlayerGames,
+  TicTacToePlayerGamesSchema,
+} from 'src/resources/tic-tac-toe/entities/tic-tac-toe-player-games.entity';
 import { User } from 'src/resources/user/entities/user.entity';
 
 export type TicTacToePlayerDocument = HydratedDocument<TicTacToePlayer>;
@@ -20,14 +20,14 @@ export class TicTacToePlayer {
   })
   player: User;
 
-  @Prop({ type: PlayerGamesSchema, required: true })
-  wins: PlayerGames;
+  @Prop({ type: TicTacToePlayerGamesSchema, required: true })
+  wins: TicTacToePlayerGames;
 
-  @Prop({ type: PlayerGamesSchema, required: true })
-  draws: PlayerGames;
+  @Prop({ type: TicTacToePlayerGamesSchema, required: true })
+  draws: TicTacToePlayerGames;
 
-  @Prop({ type: PlayerGamesSchema, required: true })
-  losses: PlayerGames;
+  @Prop({ type: TicTacToePlayerGamesSchema, required: true })
+  losses: TicTacToePlayerGames;
 
   @Prop()
   createdAt?: Date;

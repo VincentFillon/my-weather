@@ -11,6 +11,7 @@ import { join } from 'path';
 import { JwtStrategy } from 'src/config/jwt.strategy';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { PongModule } from 'src/resources/pong/pong.module';
 import { PublicHolidaysModule } from 'src/resources/public-holidays/public-holidays.module';
 import { TicTacToeModule } from 'src/resources/tic-tac-toe/tic-tac-toe.module';
 import { UserHistoryModule } from 'src/resources/user-history/user-history.module';
@@ -45,6 +46,7 @@ import { UserModule } from './resources/user/user.module';
     UserHistoryModule,
     UploadModule,
     TicTacToeModule,
+    PongModule,
     PublicHolidaysModule,
   ],
   controllers: [AppController],
