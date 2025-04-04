@@ -269,6 +269,15 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('Les 2 joueurs doivent rejoindre la partie');
     }
 
+    if (pong.isFinished) {
+      throw new WsException('Cette partie est déjà terminée');
+    }
+
+    if (pong.isPaused) {
+      pong.isPaused = false;
+      await pong.save();
+    }
+
     this.logger.log(
       `[${pong._id.toString()}] Démarrage de la partie de pong...`,
     );
@@ -292,8 +301,6 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         let lastUpdate = Date.now();
         let lastSave = Date.now();
-
-        pong.isPaused = false;
 
         this.server.to(pong._id.toString()).emit('pongStarted', pong);
 
@@ -334,11 +341,13 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
 
           // Mise à jour de la partie
-          if (now - lastSave > saveInterval) {
-            this.logger.log(
-              `[${updatedPong._id.toString()}] Balle : { x: ${updatedPong.ballPosition.x}, y: ${updatedPong.ballPosition.y} } Raquette 1 : { x: ${updatedPong.player1RacketPosition.x}, y: ${updatedPong.player1RacketPosition.y} } Raquette 2 : { x: ${updatedPong.player2RacketPosition.x}, y: ${updatedPong.player2RacketPosition.y} }`,
-            );
-            void this.pongService.update(pong._id.toString(), updatedPong);
+          if (updatedPong.isFinished || now - lastSave >= saveInterval) {
+            if (!updatedPong.isFinished) {
+              this.logger.log(
+                `[${updatedPong._id.toString()}] Balle : { x: ${updatedPong.ballPosition.x}, y: ${updatedPong.ballPosition.y} } Raquette 1 : { x: ${updatedPong.player1RacketPosition.x}, y: ${updatedPong.player1RacketPosition.y} } Raquette 2 : { x: ${updatedPong.player2RacketPosition.x}, y: ${updatedPong.player2RacketPosition.y} }`,
+              );
+            }
+            void this.update(updatedPong);
             lastSave = now;
           }
         }, 1000 / 60); // ~60 FPS
@@ -350,6 +359,15 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }, 1000);
 
     return pong;
+  }
+
+  private async update(game: PongDocument) {
+    await this.pongService.update(game._id.toString(), game);
+
+    if (game.isFinished) {
+      const leaderboard = await this.pongService.leaderboard();
+      this.server.emit('pongLeaderboardUpdated', leaderboard);
+    }
   }
 
   @SubscribeMessage('updatePong')

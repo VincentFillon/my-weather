@@ -3,9 +3,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from 'src/resources/auth/auth.module';
 import {
-  PlayerGames,
-  PlayerGamesSchema,
-} from 'src/resources/tic-tac-toe/entities/player-games.entity';
+  TicTacToePlayerGames,
+  TicTacToePlayerGamesSchema,
+} from 'src/resources/tic-tac-toe/entities/tic-tac-toe-player-games.entity';
 import {
   TicTacToe,
   TicTacToeSchema,
@@ -24,7 +24,7 @@ import { TicTacToeService } from './tic-tac-toe.service';
     MongooseModule.forFeature([
       { name: TicTacToe.name, schema: TicTacToeSchema },
       { name: TicTacToePlayer.name, schema: TicTacToePlayerSchema },
-      { name: PlayerGames.name, schema: PlayerGamesSchema },
+      { name: TicTacToePlayerGames.name, schema: TicTacToePlayerGamesSchema },
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,

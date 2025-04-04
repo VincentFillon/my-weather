@@ -8,14 +8,30 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, RootFilterQuery, Types } from 'mongoose';
 import { CreatePongDto } from 'src/resources/pong/dto/create-pong.dto';
 import { UpdatePongDto } from 'src/resources/pong/dto/update-pong.dto';
+import { PongPlayerGames } from 'src/resources/pong/entities/pong-player-games.entity';
+import {
+  PongPlayer,
+  PongPlayerDocument,
+} from 'src/resources/pong/entities/pong-player.entity';
 import { Pong, PongDocument } from 'src/resources/pong/entities/pong.entity';
-import { ballMaxVelocity, ballMinVelocity, fieldSize, logRandomInt } from 'src/resources/pong/pong.utils';
+import {
+  ballMaxVelocity,
+  ballMinVelocity,
+  fieldSize,
+  logRandomInt,
+} from 'src/resources/pong/pong.utils';
 
 @Injectable()
 export class PongService {
   private logger = new Logger(PongService.name);
 
-  constructor(@InjectModel(Pong.name) private pongModel: Model<Pong>) {}
+  constructor(
+    @InjectModel(Pong.name) private pongModel: Model<Pong>,
+    @InjectModel(PongPlayer.name)
+    private pongPlayerModel: Model<PongPlayer>,
+    @InjectModel(PongPlayerGames.name)
+    private PongPlayerGamesModel: Model<PongPlayerGames>,
+  ) {}
 
   async create(createPongDto: CreatePongDto): Promise<PongDocument> {
     // Ajout de paramètres aléatoires (direction et vitesse initale de la balle)
@@ -74,9 +90,39 @@ export class PongService {
       .exec();
   }
 
-  async leaderboard(): Promise<any[]> {
-    // TODO
-    return [];
+  async leaderboard(): Promise<PongPlayerDocument[]> {
+    const leaderboard = await this.pongPlayerModel
+      .find()
+      .populate('player')
+      .populate({
+        path: 'wins',
+        populate: {
+          path: 'games',
+          model: 'Pong',
+          populate: [
+            { path: 'player1', model: 'User' },
+            { path: 'player2', model: 'User' },
+          ],
+        },
+      })
+      .populate({
+        path: 'losses',
+        populate: {
+          path: 'games',
+          model: 'Pong',
+          populate: [
+            { path: 'player1', model: 'User' },
+            { path: 'player2', model: 'User' },
+          ],
+        },
+      })
+      .sort({ 'wins.nb': -1, 'losses.nb': 1 })
+      .exec();
+    // return leaderboard.sort((a, b) => {
+    //   if (a.wins.length !== b.wins.length) return b.wins.length - a.wins.length;
+    //   return a.losses.length - b.losses.length;
+    // });
+    return leaderboard;
   }
 
   async playerUpdate(
@@ -126,15 +172,15 @@ export class PongService {
     }
 
     // On vérifie que la partie n'est pas en pause
-    if (
-      pong.isPaused &&
-      (pongUpdates.isPaused == null || pongUpdates.isPaused === false)
-    ) {
+    if (pong.isPaused && pongUpdates.isPaused !== false) {
       return pong;
     }
 
     if (pongUpdates.isPaused != null) {
       pong.isPaused = pongUpdates.isPaused;
+    }
+    if (pongUpdates.pausedBy) {
+      pong.pausedBy = pongUpdates.pausedBy;
     }
     if (pongUpdates.ballPosition) {
       pong.ballPosition = pongUpdates.ballPosition;
@@ -157,13 +203,109 @@ export class PongService {
     if (pongUpdates.winner) {
       pong.winner = pongUpdates.winner;
     }
-    if (pongUpdates.isFinished) {
+    if (pongUpdates.isFinished != null) {
       pong.isFinished = pongUpdates.isFinished;
+      this.logger.debug(`Partie terminée : mise à jour du leaderboard...`);
+      await this.updatePlayerStats(pong);
     }
 
     await pong.save();
 
     return pong;
+  }
+
+  async updatePlayerStats(pong: PongDocument): Promise<void> {
+    this.logger.debug(
+      `Recherche du classement du joueur 1 (id: ${pong.player1._id})...`,
+    );
+    let player1 = await this.pongPlayerModel
+      .findOne({
+        player: pong.player1._id,
+      })
+      .populate('player')
+      .populate({
+        path: 'wins',
+        populate: { path: 'games', model: 'Pong' },
+      })
+      .populate({
+        path: 'losses',
+        populate: { path: 'games', model: 'Pong' },
+      })
+      .exec();
+    if (!player1) {
+      this.logger.debug(
+        `Joueur X (id: ${pong.player1._id}) non trouvé : création de son classement...`,
+      );
+      player1 = new this.pongPlayerModel({
+        player: new Types.ObjectId(pong.player1._id),
+        wins: new this.PongPlayerGamesModel(),
+        losses: new this.PongPlayerGamesModel(),
+      });
+    }
+    let player2: PongPlayerDocument | null = null;
+    if (pong.player2) {
+      this.logger.debug(
+        `Recherche du classement du joueur 2 (id: ${pong.player2?._id})...`,
+      );
+      player2 = await this.pongPlayerModel
+        .findOne({
+          player: pong.player2._id,
+        })
+        .populate('player')
+        .populate({
+          path: 'wins',
+          populate: { path: 'games', model: 'Pong' },
+        })
+        .populate({
+          path: 'losses',
+          populate: { path: 'games', model: 'Pong' },
+        })
+        .exec();
+
+      if (!player2) {
+        this.logger.debug(
+          `Joueur O (id: ${pong.player2._id}) non trouvé : création de son classement.`,
+        );
+        player2 = new this.pongPlayerModel({
+          player: new Types.ObjectId(pong.player2._id),
+          wins: new this.PongPlayerGamesModel(),
+          losses: new this.PongPlayerGamesModel(),
+        });
+      }
+    }
+
+    if (pong.winner === 1) {
+      this.logger.debug(
+        `Ajout de la victoire au classement du joueur 1 (id: ${pong.player1._id}).`,
+      );
+      player1.wins.nb++;
+      player1.wins.games.push(pong);
+      if (player2) {
+        this.logger.debug(
+          `Ajout de la défaite au classement du joueur 2 (id: ${pong.player2._id}).`,
+        );
+        player2.losses.nb++;
+        player2.losses.games.push(pong);
+      }
+    } else if (pong.winner === 2) {
+      this.logger.debug(
+        `Ajout de la défaite au classement du joueur 1 (id: ${pong.player1._id}).`,
+      );
+      player1.losses.nb++;
+      player1.losses.games.push(pong);
+      if (player2) {
+        this.logger.debug(
+          `Ajout de la victoire au classement du joueur 2 (id: ${pong.player2._id}).`,
+        );
+        player2.wins.nb++;
+        player2.wins.games.push(pong);
+      }
+    }
+
+    await player1.save();
+    if (player2) {
+      await player2.save();
+    }
   }
 
   async remove(id: string): Promise<PongDocument> {
