@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, RootFilterQuery, Types } from 'mongoose';
-import { PlayerGames } from 'src/resources/tic-tac-toe/entities/player-games.entity';
+import { TicTacToePlayerGames } from 'src/resources/tic-tac-toe/entities/tic-tac-toe-player-games.entity';
 import {
   TicTacToePlayer,
   TicTacToePlayerDocument,
@@ -26,8 +26,8 @@ export class TicTacToeService {
     @InjectModel(TicTacToe.name) private ticTacToeModel: Model<TicTacToe>,
     @InjectModel(TicTacToePlayer.name)
     private ticTacToePlayerModel: Model<TicTacToePlayer>,
-    @InjectModel(PlayerGames.name)
-    private playerGamesModel: Model<PlayerGames>,
+    @InjectModel(TicTacToePlayerGames.name)
+    private TicTacToePlayerGamesModel: Model<TicTacToePlayerGames>,
   ) {}
 
   async create(
@@ -69,7 +69,10 @@ export class TicTacToeService {
     isFinished?: boolean,
   ): Promise<TicTacToeDocument[]> {
     const query: RootFilterQuery<TicTacToe> = {
-      $or: [{ playerX: { _id: new Types.ObjectId(userId) } }, { playerO: { _id: new Types.ObjectId(userId) } }],
+      $or: [
+        { playerX: { _id: new Types.ObjectId(userId) } },
+        { playerO: { _id: new Types.ObjectId(userId) } },
+      ],
     };
     if (isFinished != null) {
       query.isFinished = isFinished;
@@ -223,9 +226,9 @@ export class TicTacToeService {
       );
       playerX = new this.ticTacToePlayerModel({
         player: new Types.ObjectId(ticTacToe.playerX._id),
-        wins: new this.playerGamesModel(),
-        draws: new this.playerGamesModel(),
-        losses: new this.playerGamesModel(),
+        wins: new this.TicTacToePlayerGamesModel(),
+        draws: new this.TicTacToePlayerGamesModel(),
+        losses: new this.TicTacToePlayerGamesModel(),
       });
     }
     let playerO: TicTacToePlayerDocument | null = null;
@@ -258,9 +261,9 @@ export class TicTacToeService {
         );
         playerO = new this.ticTacToePlayerModel({
           player: new Types.ObjectId(ticTacToe.playerO._id),
-          wins: new this.playerGamesModel(),
-          draws: new this.playerGamesModel(),
-          losses: new this.playerGamesModel(),
+          wins: new this.TicTacToePlayerGamesModel(),
+          draws: new this.TicTacToePlayerGamesModel(),
+          losses: new this.TicTacToePlayerGamesModel(),
         });
       }
     }
