@@ -15,7 +15,7 @@ export const fieldSize = { x: 200, y: 150 };
 export const racketWidth = 5;
 export const racketHeight = 30;
 export const ballRadius = 5;
-export const ballMinVelocity = 20;
+export const ballMinVelocity = 40;
 export const ballMaxVelocity = 150;
 export const maxIARacketVelocity = 150;
 
@@ -58,15 +58,15 @@ export const calcRacketBounce = (
   const normalizedImpact = relativeImpactY / (racketHeight / 2); // entre -1 et 1
 
   // 3. Calcul de l'ajustement de l'angle du rebond
-  const bounceAngle = normalizedImpact * 0.5 + racketVelocity * 0.05; // Ajustement
+  const bounceAngle = normalizedImpact * 0.5 + racketVelocity * 0.3; // Ajustement
   const originalAngle = Math.atan2(ballVy, ballVx);
   const newAngle = originalAngle + bounceAngle;
-  const newBallVy = ballVelocity * Math.sin(newAngle);
   // Augmenter la vitesse de la balle
   let newBallVelocity = ballVelocity * 1.05;
   if (Math.abs(racketVelocity) > ballVelocity) {
     newBallVelocity += Math.abs(racketVelocity) * 0.05;
   }
+  const newBallVy = newBallVelocity * Math.sin(newAngle);
   return {
     x: newBallVx,
     y: newBallVy,
