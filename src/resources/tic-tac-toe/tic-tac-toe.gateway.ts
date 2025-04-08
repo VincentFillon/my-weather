@@ -127,7 +127,6 @@ export class TicTacToeGateway
 
     // On notifie les joueurs de la room de la création de la partie
     this.server.to(ticTacToeId).emit('ticTacToeJoined', ticTacToe);
-    this.server.to(ticTacToeId).emit('ticTacToeCreated', ticTacToe);
 
     return ticTacToe;
   }
@@ -194,12 +193,13 @@ export class TicTacToeGateway
     description:
       "Retourne les parties de morpion d'un utilisateur à partir de son ID. Peut être filtré par partie terminée ou non",
   })
-  async findByUser(@MessageBody() search: FindTicTacToeByUserDto) {
+  async findByUser(@ConnectedSocket() socket: Socket, @MessageBody() search: FindTicTacToeByUserDto) {
     const ticTacToes = await this.ticTacToeService.findByUser(
       search.userId,
       search.isFinished,
     );
-    this.server.emit('ticTacToesFound', ticTacToes);
+    socket.join(search.userId);
+    this.server.to(search.userId).emit('ticTacToesFound', ticTacToes);
     return ticTacToes;
   }
 

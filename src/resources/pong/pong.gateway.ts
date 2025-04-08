@@ -140,7 +140,6 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // On notifie les joueurs de la room de la création de la partie
     this.server.to(pongId).emit('pongCreated', pong);
-    this.server.to(pongId).emit('pongJoined', pong);
 
     return pong;
   }
@@ -175,12 +174,13 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     description:
       "Retourne les parties de pong d'un utilisateur à partir de son ID. Peut être filtré par partie terminée ou non",
   })
-  async findByUser(@MessageBody() search: FindPongByUserDto) {
+  async findByUser(@ConnectedSocket() socket: Socket, @MessageBody() search: FindPongByUserDto) {
     const pongs = await this.pongService.findByUser(
       search.userId,
       search.isFinished,
     );
-    this.server.emit('pongsFound', pongs);
+    socket.join(search.userId);
+    this.server.to(search.userId).emit('pongsFound', pongs);
     return pongs;
   }
 
