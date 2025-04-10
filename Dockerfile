@@ -25,4 +25,4 @@ ENV PORT=${PORT}
 EXPOSE ${PORT}
 
 # Run the web service on container startup.
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]
