@@ -31,7 +31,7 @@ import { TasksService } from 'src/tasks/tasks.service';
       `mongodb://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT}/${process.env.MONGODB_DATABASE}`,
     ),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'data'),
+      rootPath: join(__dirname, '../..', 'data'),
       serveRoot: `/${process.env.API_PREFIX}/data`,
     }),
     PassportModule,
