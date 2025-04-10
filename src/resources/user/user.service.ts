@@ -17,12 +17,15 @@ export class UserService implements OnModuleInit {
 
   onModuleInit() {
     // Patch pour les utilisateurs sans displayName
-    this.userModel.find({ displayName: null }).exec().then((users) => {
-      users.forEach((user) => {
-        user.displayName = user.username;
-        user.save();
+    this.userModel
+      .find({ displayName: null })
+      .exec()
+      .then((users) => {
+        users.forEach((user) => {
+          user.displayName = user.username;
+          user.save();
+        });
       });
-    });
   }
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
@@ -40,6 +43,13 @@ export class UserService implements OnModuleInit {
 
   findOne(id: string): Promise<UserDocument> {
     return this.userModel.findById(id).populate('mood').exec();
+  }
+
+  findMany(ids: string[]): Promise<UserDocument[]> {
+    return this.userModel
+      .find({ _id: { $in: ids } })
+      .populate('mood')
+      .exec();
   }
 
   findByUsername(username: string): Promise<UserDocument> {
@@ -62,7 +72,11 @@ export class UserService implements OnModuleInit {
     const previousUser = await this.findOne(id);
 
     // Si un utilisateur non admin essaye de modifier le rôle de son utilisateur ou d'un autre utilisateur : bloquer la requête
-    if (previousUser.role !== updateUserDto.role && updateUserDto.role === Role.ADMIN && (!fromUser || fromUser.role !== Role.ADMIN)) {
+    if (
+      previousUser.role !== updateUserDto.role &&
+      updateUserDto.role === Role.ADMIN &&
+      (!fromUser || fromUser.role !== Role.ADMIN)
+    ) {
       throw new ForbiddenException('Forbidden');
     }
 
@@ -85,7 +99,10 @@ export class UserService implements OnModuleInit {
   }
 
   async remove(id: string): Promise<UserDocument> {
-    const user = await this.userModel.findByIdAndDelete(id).populate('mood').exec();
+    const user = await this.userModel
+      .findByIdAndDelete(id)
+      .populate('mood')
+      .exec();
     this.eventEmitter.emit('user.removed', id);
     return user;
   }
