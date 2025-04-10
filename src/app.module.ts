@@ -8,20 +8,21 @@ import { PassportModule } from '@nestjs/passport';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AppController } from 'src/app.controller';
+import { AppService } from 'src/app.service';
 import { JwtStrategy } from 'src/config/jwt.strategy';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { AuthModule } from 'src/resources/auth/auth.module';
+import { ChatModule } from 'src/resources/chat/chat.module';
+import { MoodModule } from 'src/resources/mood/mood.module';
 import { PongModule } from 'src/resources/pong/pong.module';
 import { PublicHolidaysModule } from 'src/resources/public-holidays/public-holidays.module';
 import { TicTacToeModule } from 'src/resources/tic-tac-toe/tic-tac-toe.module';
+import { UploadModule } from 'src/resources/upload/upload.module';
 import { UserHistoryModule } from 'src/resources/user-history/user-history.module';
+import { UserModule } from 'src/resources/user/user.module';
 import { TasksService } from 'src/tasks/tasks.service';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { AuthModule } from './resources/auth/auth.module';
-import { MoodModule } from './resources/mood/mood.module';
-import { UploadModule } from './resources/upload/upload.module';
-import { UserModule } from './resources/user/user.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { UserModule } from './resources/user/user.module';
     TicTacToeModule,
     PongModule,
     PublicHolidaysModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [
