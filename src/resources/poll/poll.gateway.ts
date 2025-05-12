@@ -1,13 +1,17 @@
 import {
   ForbiddenException,
+  Logger,
   NotFoundException,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -23,11 +27,44 @@ import { PollService } from './poll.service';
 @ApiTags('Poll WebSocket')
 @UseGuards(JwtAuthGuard)
 @WebSocketGateway()
-export class PollGateway {
+export class PollGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(PollGateway.name);
+
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly pollService: PollService) {}
+  constructor(
+    private readonly pollService: PollService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async handleConnection(client: Socket) {
+    try {
+      const token = client.handshake?.headers?.authorization;
+      if (token) {
+        const user = this.jwtService.verify(token, {
+          secret: process.env.JWT_SECRET,
+        });
+        if (user && user.sub) {
+          // Joindre la room personnelle de l'utilisateur
+          client.join(`user_${user.sub}`);
+          this.logger.log(
+            `Utilisateur ${user.sub} connecté à la socket ${client.id}`,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error during connection:', error);
+      client.disconnect(true);
+    }
+  }
+
+  handleDisconnect(client: Socket) {
+    const user = (client as any).user;
+    const userId = user ? user.sub : 'inconnu';
+    console.log(`[Chat WS] Client déconnecté: ${client.id} (User: ${userId})`);
+    // Socket.IO gère automatiquement le 'leave' des rooms lors de la déconnexion
+  }
 
   @SubscribeMessage('createPoll')
   @ApiOperation({
@@ -52,9 +89,14 @@ export class PollGateway {
     summary: 'Récupérer toutes les sondages',
     description: 'Retourne la liste de toutes les sondages disponibles',
   })
-  async findAll() {
+  async findAll(@ConnectedSocket() client: Socket) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) {
+      throw new UnauthorizedException();
+    }
+
     const polls = await this.pollService.findAll();
-    this.server.emit('pollsFound', polls);
+    this.server.to(`user_${currentUser.sub}`).emit('pollsFound', polls);
     return polls;
   }
 
@@ -64,9 +106,16 @@ export class PollGateway {
     description:
       'Retourne la liste des sondages correspondant aux filtres donnés',
   })
-  async search(@MessageBody() filters: SearchPollsDto) {
+  async search(
+    @MessageBody() filters: SearchPollsDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) {
+      throw new UnauthorizedException();
+    }
     const polls = await this.pollService.search(filters);
-    this.server.emit('pollsSearchFound', polls);
+    this.server.to(`user_${currentUser.sub}`).emit('pollsSearchFound', polls);
     return polls;
   }
 
@@ -75,9 +124,13 @@ export class PollGateway {
     summary: 'Récupérer un sondage spécifique',
     description: "Retourne les détails d'un sondage à partir de son ID",
   })
-  async findOne(@MessageBody() id: string) {
+  async findOne(@MessageBody() id: string, @ConnectedSocket() client: Socket) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) {
+      throw new UnauthorizedException();
+    }
     const poll = await this.pollService.findOne(id);
-    this.server.emit('pollFound', poll);
+    this.server.to(`user_${currentUser.sub}`).emit('pollFound', poll);
     return poll;
   }
 
@@ -114,9 +167,18 @@ export class PollGateway {
     summary: "Récupérer les votes d'un sondage",
     description: "Retourne la liste des votes d'un sondage spécifique",
   })
-  async findPollVotes(@MessageBody() pollId: string) {
+  async findPollVotes(
+    @MessageBody() pollId: string,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) {
+      throw new UnauthorizedException();
+    }
     const userVotes = await this.pollService.findVotesByPollId(pollId);
-    this.server.emit('pollVotes', { pollId, userVotes });
+    this.server
+      .to(`user_${currentUser.sub}`)
+      .emit('pollVotes', { pollId, userVotes });
     return userVotes;
   }
 
