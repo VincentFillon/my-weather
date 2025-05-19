@@ -18,6 +18,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { Role } from 'src/resources/auth/enums/role.enum';
 import { SearchPollsDto } from 'src/resources/poll/dto/search-polls.dto';
 import { UserVoteDto } from 'src/resources/poll/dto/user-vote.dto';
 import { CreatePollDto } from './dto/create-poll.dto';
@@ -150,7 +151,10 @@ export class PollGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!poll) {
       throw new NotFoundException('Poll not found');
     }
-    if (poll.creator._id.toString() !== currentUser.sub) {
+    if (
+      currentUser.role !== Role.ADMIN &&
+      poll.creator._id.toString() !== currentUser.sub
+    ) {
       throw new ForbiddenException('You are not the creator of this poll');
     }
 
@@ -204,7 +208,20 @@ export class PollGateway implements OnGatewayConnection, OnGatewayDisconnect {
     summary: 'Supprimer un sondage',
     description: 'Permet de supprimer un sondage existante',
   })
-  async remove(@MessageBody() id: string) {
+  async remove(@MessageBody() id: string, @ConnectedSocket() client: Socket) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) throw new UnauthorizedException();
+
+    const poll = await this.pollService.findOne(id);
+    if (!poll) {
+      throw new NotFoundException('Poll not found');
+    }
+    if (
+      currentUser.role !== Role.ADMIN &&
+      poll.creator._id.toString() !== currentUser.sub
+    ) {
+      throw new ForbiddenException('You are not the creator of this poll');
+    }
     const deletedPoll = await this.pollService.delete(id);
     this.server.emit('pollRemoved', id);
     return deletedPoll;

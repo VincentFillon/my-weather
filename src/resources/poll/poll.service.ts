@@ -113,10 +113,60 @@ export class PollService {
   }
 
   async update(pollId: string, updatePollDto: UpdatePollDto): Promise<Poll> {
-    return this.pollModel.findByIdAndUpdate(pollId, updatePollDto, {
-      new: true,
-      populate: 'creator',
-    });
+    // Get the current poll with options
+    const poll = await this.pollModel.findById(pollId).exec();
+    if (!poll) {
+      throw new NotFoundException('Poll not found');
+    }
+
+    // If options are being updated, check for removed options
+    if (updatePollDto.options) {
+      // Get current option IDs as strings
+      const currentOptionIds = poll.options.map((opt) => opt._id.toString());
+      // Get new option IDs as strings (if they have _id)
+      const newOptionIds = updatePollDto.options
+        .map((opt) => opt._id?.toString())
+        .filter(Boolean);
+
+      // Find removed option IDs
+      const removedOptionIds = currentOptionIds.filter(
+        (id) => !newOptionIds.includes(id),
+      );
+
+      if (removedOptionIds.length > 0) {
+        // Remove UserVotes that selected any of the removed options
+        // Find all UserVotes for this poll that have at least one removed option
+        const userVotes = await this.userVoteModel.find({
+          poll: new Types.ObjectId(pollId),
+          selectedOptions: {
+            $in: removedOptionIds.map((id) => new Types.ObjectId(id)),
+          },
+        });
+
+        for (const userVote of userVotes) {
+          // Remove the removed options from selectedOptions
+          userVote.selectedOptions = userVote.selectedOptions.filter(
+            (optionId) => !removedOptionIds.includes(optionId.toString()),
+          );
+          if (userVote.selectedOptions.length === 0) {
+            // If no options left, delete the UserVote
+            await this.userVoteModel.deleteOne({ _id: userVote._id });
+          } else {
+            // Otherwise, save the updated UserVote
+            await userVote.save();
+          }
+        }
+      }
+    }
+
+    // Update the poll
+    const updatedPoll = await this.pollModel
+      .findByIdAndUpdate(pollId, updatePollDto, {
+        new: true,
+      })
+      .populate('creator');
+
+    return updatedPoll;
   }
 
   async findVotesByPollId(pollId: string): Promise<UserVote[]> {
