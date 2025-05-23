@@ -82,7 +82,7 @@ export class UserGateway {
 
     const updatedUser = await this.userService.update(
       user._id,
-      user,
+      { _id: user._id, image: user.image, password: user.password }, // Ne pas récupérer mood/group ici
       currentUserEntity,
     );
     this.server.emit('userUpdated', updatedUser);

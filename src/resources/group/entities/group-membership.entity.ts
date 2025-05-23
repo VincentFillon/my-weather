@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 import { Group } from 'src/resources/group/entities/group.entity';
 import { GroupRole } from 'src/resources/group/enums/group-role.enum';
+import { Mood } from 'src/resources/mood/entities/mood.entity';
 import { User } from 'src/resources/user/entities/user.entity';
 
 export type GroupMembershipDocument = GroupMembership & Document;
@@ -31,6 +32,9 @@ export class GroupMembership {
     default: GroupRole.MEMBER,
   })
   role: GroupRole;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Mood' })
+  mood: Mood | mongoose.Types.ObjectId;
 }
 
 export const GroupMembershipSchema =
