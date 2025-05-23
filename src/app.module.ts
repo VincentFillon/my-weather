@@ -16,6 +16,7 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { AuthModule } from 'src/resources/auth/auth.module';
 import { ChatModule } from 'src/resources/chat/chat.module';
 import { MoodModule } from 'src/resources/mood/mood.module';
+import { PollModule } from 'src/resources/poll/poll.module';
 import { PongModule } from 'src/resources/pong/pong.module';
 import { PublicHolidaysModule } from 'src/resources/public-holidays/public-holidays.module';
 import { TicTacToeModule } from 'src/resources/tic-tac-toe/tic-tac-toe.module';
@@ -50,6 +51,7 @@ import { TasksService } from 'src/tasks/tasks.service';
     PongModule,
     PublicHolidaysModule,
     ChatModule,
+    PollModule,
   ],
   controllers: [AppController],
   providers: [
