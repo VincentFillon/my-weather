@@ -4,6 +4,17 @@ import { User } from 'src/resources/user/entities/user.entity';
 
 export type MessageDocument = HydratedDocument<Message>;
 
+export class MessageReaction {
+  @Prop({ required: true })
+  emoji: string;
+
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
+  userIds: mongoose.Types.ObjectId[];
+}
+
 @Schema({ timestamps: true })
 export class Message {
   _id: Types.ObjectId;
@@ -16,6 +27,9 @@ export class Message {
 
   @Prop({ required: true })
   content: string;
+
+  @Prop({ type: [MessageReaction], default: [] })
+  reactions: MessageReaction[];
 
   @Prop()
   createdAt: Date;
