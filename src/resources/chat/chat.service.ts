@@ -170,6 +170,68 @@ export class ChatService {
     await message.save();
     return this.messageModel.findById(message._id).populate('sender').exec();
   }
+  /**
+   * Ajoute une réaction emoji à un message.
+   */
+  async addReaction(
+    messageId: string,
+    emoji: string,
+    userId: string,
+  ): Promise<Message> {
+    const message = await this.messageModel.findById(messageId);
+    if (!message) throw new NotFoundException('Message not found');
+
+    const typedUserId = new Types.ObjectId(userId);
+
+    const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
+
+    if (reactionIndex === -1) {
+      // Première fois qu'on utilise cet émoji sur ce message
+      message.reactions.push({ emoji, userIds: [typedUserId] });
+    } else {
+      // Éviter doublon
+      const idx = message.reactions[reactionIndex].userIds.findIndex(
+        (id) => id.toString() === typedUserId.toString(),
+      );
+      if (idx === -1) {
+        message.reactions[reactionIndex].userIds.push(typedUserId);
+      }
+    }
+    await message.save();
+    return this.messageModel.findById(messageId).populate('sender').exec();
+  }
+
+  /**
+   * Retire une réaction emoji à un message pour un utilisateur.
+   */
+  async removeReaction(
+    messageId: string,
+    emoji: string,
+    userId: string,
+  ): Promise<Message> {
+    const message = await this.messageModel.findById(messageId);
+    if (!message) throw new NotFoundException('Message not found');
+
+    const typedUserId = new Types.ObjectId(userId);
+
+    console.debug(message.reactions);
+    const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
+    if (reactionIndex !== -1) {
+      const idx = message.reactions[reactionIndex].userIds.findIndex(
+        (id) => id.toString() === typedUserId.toString(),
+      );
+      if (idx !== -1) {
+        message.reactions[reactionIndex].userIds.splice(idx, 1);
+        // Si plus personne n'a cette réaction, on l'enlève du tableau
+        if (message.reactions[reactionIndex].userIds.length === 0) {
+          message.reactions.splice(reactionIndex, 1);
+        }
+        console.debug(message.reactions);
+        await message.save();
+      }
+    }
+    return this.messageModel.findById(messageId).populate('sender').exec();
+  }
 
   async updateRoom(updateRoomDto: UpdateRoomDto): Promise<Room> {
     return this.roomModel.findByIdAndUpdate(

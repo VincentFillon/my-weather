@@ -22,6 +22,7 @@ import { ChatService } from 'src/resources/chat/chat.service';
 import { CreateRoomDto } from 'src/resources/chat/dto/create-room.dto';
 import { JoinRoomDto } from 'src/resources/chat/dto/join-room.dto';
 import { MarkAsReadDto } from 'src/resources/chat/dto/mark-as-read.dto';
+import { MessageReactionDto } from 'src/resources/chat/dto/message-reaction.dto';
 import { SendMessageDto } from 'src/resources/chat/dto/send-message.dto';
 import { UpdateRoomDto } from 'src/resources/chat/dto/update-room.dto';
 
@@ -319,6 +320,54 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     });
 
+    return message;
+  }
+
+  @SubscribeMessage('addReaction')
+  async handleAddReaction(
+    @MessageBody() data: MessageReactionDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) {
+      throw new UnauthorizedException();
+    }
+    const message = await this.chatService.addReaction(
+      data.messageId,
+      data.emoji,
+      currentUser.sub,
+    );
+
+    // Diffuse le message mis à jour (avec reactions) à la room du message
+    this.server
+      .to(`chat_${message.room.toString()}`)
+      .emit('messageUpdated', message);
+    return message;
+  }
+
+  @SubscribeMessage('removeReaction')
+  async handleRemoveReaction(
+    @MessageBody() data: MessageReactionDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const currentUser = (client as any).user;
+    if (!currentUser || !currentUser.sub) {
+      throw new UnauthorizedException();
+    }
+
+    this.logger.log(`[Chat WS] User ${currentUser.sub} supprime une réaction sur le message ${data.messageId} avec l'emoji ${data.emoji}`);
+
+    const message = await this.chatService.removeReaction(
+      data.messageId,
+      data.emoji,
+      currentUser.sub,
+    );
+
+    this.logger.debug(message);
+
+    this.server
+      .to(`chat_${message.room.toString()}`)
+      .emit('messageUpdated', message);
     return message;
   }
 
