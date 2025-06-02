@@ -332,11 +332,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!currentUser || !currentUser.sub) {
       throw new UnauthorizedException();
     }
+
+    this.logger.log(`[Chat WS] User ${currentUser.sub} ajoute une réaction sur le message ${data.messageId} avec l'emoji ${data.emoji}`);
+
     const message = await this.chatService.addReaction(
       data.messageId,
       data.emoji,
       currentUser.sub,
     );
+
+    this.logger.debug(message);
 
     // Diffuse le message mis à jour (avec reactions) à la room du message
     this.server

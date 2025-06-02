@@ -185,18 +185,19 @@ export class ChatService {
 
     const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
 
+    console.log(`[ChatService] addReaction: messageId=${messageId}, emoji=${emoji}, userId=${userId}, reactionIndex=${reactionIndex}`);
+
     if (reactionIndex === -1) {
       // Première fois qu'on utilise cet émoji sur ce message
       message.reactions.push({ emoji, userIds: [typedUserId] });
-    } else {
-      // Éviter doublon
-      const idx = message.reactions[reactionIndex].userIds.findIndex(
-        (id) => id.toString() === typedUserId.toString(),
-      );
-      if (idx === -1) {
-        message.reactions[reactionIndex].userIds.push(typedUserId);
-      }
+    } else if (
+      !message.reactions[reactionIndex].userIds.some((id) =>
+        id.equals(typedUserId),
+      )
+    ) {
+      message.reactions[reactionIndex].userIds.push(typedUserId);
     }
+    message.markModified('reactions');
     await message.save();
     return this.messageModel.findById(messageId).populate('sender').exec();
   }
@@ -214,11 +215,11 @@ export class ChatService {
 
     const typedUserId = new Types.ObjectId(userId);
 
-    console.debug(message.reactions);
+    // console.debug(message.reactions);
     const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
     if (reactionIndex !== -1) {
-      const idx = message.reactions[reactionIndex].userIds.findIndex(
-        (id) => id.toString() === typedUserId.toString(),
+      const idx = message.reactions[reactionIndex].userIds.findIndex((id) =>
+        id.equals(typedUserId),
       );
       if (idx !== -1) {
         message.reactions[reactionIndex].userIds.splice(idx, 1);
@@ -226,7 +227,8 @@ export class ChatService {
         if (message.reactions[reactionIndex].userIds.length === 0) {
           message.reactions.splice(reactionIndex, 1);
         }
-        console.debug(message.reactions);
+        message.markModified('reactions');
+        // console.debug(message.reactions);
         await message.save();
       }
     }
