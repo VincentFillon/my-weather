@@ -61,7 +61,7 @@ export class UploadService {
       });
       await media.save();
 
-      return { url: this.getFileUrl(media.filename) };
+      return { url: media.filename };
     } catch (error) {
       throw new BadRequestException('Could not save file');
     }
