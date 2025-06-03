@@ -7,6 +7,7 @@ export class UploadValidator {
     'image/jpeg',
     'image/png',
     'image/gif',
+    'image/webp',
   ]);
 
   private static readonly ALLOWED_AUDIO_MIMES = new Set([
@@ -20,13 +21,14 @@ export class UploadValidator {
     '.jpeg',
     '.png',
     '.gif',
+    '.webp',
   ]);
 
   private static readonly ALLOWED_AUDIO_EXTENSIONS = new Set(['.mp3', '.wav']);
 
   static async validateFile(
     file: Express.Multer.File,
-    type: 'image' | 'sound',
+    type: 'image' | 'sound' | 'media',
   ): Promise<void> {
     // Vérifier si le fichier existe
     if (!file) {
@@ -36,7 +38,7 @@ export class UploadValidator {
     // Vérifier l'extension du fichier
     const ext = extname(file.originalname).toLowerCase();
     const allowedExtensions =
-      type === 'image'
+      type === 'image' || type === 'media'
         ? UploadValidator.ALLOWED_IMAGE_EXTENSIONS
         : UploadValidator.ALLOWED_AUDIO_EXTENSIONS;
 
@@ -46,7 +48,7 @@ export class UploadValidator {
 
     // Vérifier le type MIME déclaré
     const allowedMimes =
-      type === 'image'
+      type === 'image' || type === 'media'
         ? UploadValidator.ALLOWED_IMAGE_MIMES
         : UploadValidator.ALLOWED_AUDIO_MIMES;
 

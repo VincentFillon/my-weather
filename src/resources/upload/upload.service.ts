@@ -35,9 +35,10 @@ export class UploadService {
   async saveFile(
     file: Express.Multer.File,
     type: MediaType,
-  ): Promise<MediaDocument> {
+  ): Promise<{ url: string }> {
     // Valider le fichier
-    await UploadValidator.validateFile(file, type);
+    // Cast 'type' to the expected literal types for UploadValidator.validateFile
+    await UploadValidator.validateFile(file, type as 'image' | 'sound' | 'media');
 
     // Générer un nom de fichier unique et sécurisé
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -60,7 +61,7 @@ export class UploadService {
       });
       await media.save();
 
-      return media;
+      return { url: this.getFileUrl(media.filename) };
     } catch (error) {
       throw new BadRequestException('Could not save file');
     }
