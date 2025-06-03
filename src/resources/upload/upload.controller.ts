@@ -91,6 +91,33 @@ export class UploadController {
     return this.uploadService.saveFile(file, MediaType.SOUND);
   }
 
+  @Post('media')
+  @UseInterceptors(FileInterceptor('file')) // 'file' est le nom du champ attendu par le frontend
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { // Doit correspondre au nom utilisé dans FileInterceptor
+          type: 'string',
+          format: 'binary',
+          description: 'Fichier image (jpg, jpeg, png, webp) ou GIF',
+        },
+      },
+      required: ['file'], // Rendre le champ 'file' obligatoire
+    },
+  })
+  @ApiOperation({
+    summary: 'Uploader un média (image ou GIF) pour le chat',
+    description:
+      'Accepte un fichier image (jpg, jpeg, png, webp) ou GIF et le stocke. Retourne l_url publique du fichier.',
+  })
+  async uploadMedia(@UploadedFile() file: Express.Multer.File) {
+    // Pas besoin de RolesGuard ici si l'upload est ouvert à tous les utilisateurs connectés
+    // Si une authentification est requise, un AuthGuard global ou spécifique serait nécessaire
+    return this.uploadService.saveFile(file, MediaType.MEDIA);
+  }
+
   @Delete(':id')
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)

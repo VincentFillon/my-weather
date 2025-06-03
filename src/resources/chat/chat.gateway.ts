@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Logger,
   NotFoundException,
@@ -294,6 +295,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!currentUser || !currentUser.sub) {
       throw new UnauthorizedException();
     }
+
+    // Validation: content ou mediaUrl doit être présent
+    if (!sendMessageDto.content && !sendMessageDto.mediaUrl) {
+      throw new BadRequestException(
+        'Un message doit contenir du texte ou un média.',
+      );
+    }
+
     const room = await this.chatService.findOne(sendMessageDto.room);
     if (!room) {
       throw new NotFoundException('Room not found');
@@ -301,6 +310,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!room.users.some((user) => user._id.toString() === currentUser.sub)) {
       throw new ForbiddenException();
     }
+
+    // Assigner le sender au DTO, car il est validé mais pas nécessairement inclus dans le body par le client
+    sendMessageDto.sender = currentUser.sub;
 
     const message = await this.chatService.sendMessage(sendMessageDto);
     const roomId = message.room.toString();
