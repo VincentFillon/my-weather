@@ -77,12 +77,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!currentUser || !currentUser.sub) throw new UnauthorizedException();
 
     // S'assurer que le créateur est inclus dans la liste des users
-    if (!createRoomDto.usersIds.includes(currentUser.sub)) {
-      createRoomDto.usersIds.push(currentUser.sub);
+    if (!createRoomDto.userIds.includes(currentUser.sub)) {
+      createRoomDto.userIds.push(currentUser.sub);
     }
 
-    const room = await this.chatService.createRoom(createRoomDto);
-    // TODO: Définir le créateur de la room comme administrateur par défaut
+    const room = await this.chatService.createRoom(createRoomDto, currentUser.sub);
 
     // Notifier tous les membres (y compris le créateur) via leur room personnelle
     room.users.forEach((user) => {
@@ -101,8 +100,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!currentUser || !currentUser.sub) {
       throw new UnauthorizedException();
     }
-    // TODO: Seul un admin de la room peut ajouter un utilisateur
-    const room = await this.chatService.joinRoom(joinRoomDto);
+    let room = await this.chatService.findOne(joinRoomDto.roomId);
+
+    if (room.creator._id.toString() !== currentUser.sub) {
+      throw new ForbiddenException();
+    }
+
+    room = await this.chatService.joinRoom(joinRoomDto);
+
     // Notifier tous les membres via leur room personnelle
     room.users.forEach((user) => {
       this.server.to(`user_${user._id.toString()}`).emit('roomUpdated', room);
@@ -142,10 +147,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!room) {
       throw new NotFoundException('Room not found');
     }
-    if (!room.users.some((user) => user._id.toString() === currentUser.sub)) {
+    if (room.creator._id.toString() !== currentUser.sub) {
       throw new ForbiddenException();
     }
-    // TODO: Seul un admin de la room peut expulser un utilisateur
 
     const updatedRoom = await this.chatService.leaveRoom(
       expelUserDto.roomId,
@@ -181,10 +185,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!room) {
       throw new NotFoundException('Room not found');
     }
-    if (!room.users.some((user) => user._id.toString() === currentUser.sub)) {
+    if (room.creator._id.toString() !== currentUser.sub) {
       throw new ForbiddenException();
     }
-    // TODO: Seul un admin de la room peut la modifier
 
     const updatedRoom = await this.chatService.updateRoom(updateRoomDto);
 
@@ -420,7 +423,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!currentUser || !currentUser.sub) {
       throw new UnauthorizedException();
     }
-    // TODO: Seul un admin de la room peut la supprimer
+    const room = await this.chatService.findOne(roomId);
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+    if (room.creator._id.toString() !== currentUser.sub) {
+      throw new ForbiddenException();
+    }
 
     await this.chatService.deleteRoom(roomId);
     this.server.emit('roomDeleted', { roomId });

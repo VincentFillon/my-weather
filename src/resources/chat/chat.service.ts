@@ -1,7 +1,7 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -30,20 +30,36 @@ export class ChatService {
     private userService: UserService,
   ) {}
 
-  async createRoom(createRoomDto: CreateRoomDto): Promise<Room> {
-    const users = await this.userService.findMany(createRoomDto.usersIds);
-    if (users.length < 2) {
+  async createRoom(createRoomDto: CreateRoomDto, creatorId: string): Promise<Room> {
+    const creator = await this.userService.findOne(creatorId);
+    if (!creator) {
+      throw new NotFoundException('Creator not found');
+    }
+
+    // Ensure creator is part of the users list
+    const userIdsWithCreator = Array.from(new Set([...createRoomDto.userIds, creatorId]));
+
+    const users = await this.userService.findMany(userIdsWithCreator);
+    if (users.length < 2 && userIdsWithCreator.length < 2) { // Also check original list length in case of duplicate creatorId
       throw new BadRequestException(
-        'At least two users are required to create a room',
+        'At least two users (including the creator) are required to create a room',
       );
     }
-    const room = new this.roomModel({ ...createRoomDto, users });
+
+    const roomData = {
+      name: createRoomDto.name,
+      image: createRoomDto.image,
+      users: users,
+      creator: creator, // Assign the creator object
+    };
+
+    const room = new this.roomModel(roomData);
     await room.save();
-    return this.roomModel.findById(room._id).populate('users').exec();
+    return this.roomModel.findById(room._id).populate('users').populate('creator').exec();
   }
 
   async findOne(roomId: string): Promise<Room> {
-    return this.roomModel.findById(roomId).populate('users').exec();
+    return this.roomModel.findById(roomId).populate('users').populate('creator').exec();
   }
 
   async findByUser(userId: string): Promise<Room[]> {
@@ -80,6 +96,7 @@ export class ChatService {
     const room = await this.roomModel
       .findById(joinRoomDto.roomId)
       .populate('users')
+      .populate('creator')
       .exec();
     if (!room) throw new NotFoundException('Room not found');
 
@@ -157,7 +174,7 @@ export class ChatService {
   }
 
   async leaveRoom(roomId: string, userId: string): Promise<Room> {
-    const room = await this.roomModel.findById(roomId).populate('users').exec();
+    const room = await this.roomModel.findById(roomId).populate('users').populate('creator').exec();
     if (!room) throw new NotFoundException('Room not found');
 
     room.users = room.users.filter((user) => user._id.toString() !== userId);
@@ -236,11 +253,43 @@ export class ChatService {
   }
 
   async updateRoom(updateRoomDto: UpdateRoomDto): Promise<Room> {
-    return this.roomModel.findByIdAndUpdate(
-      updateRoomDto.roomId,
-      updateRoomDto,
-      { new: true, populate: 'users' },
-    );
+    const room = await this.roomModel.findById(updateRoomDto.roomId).populate('creator').populate('users').populate('creator').exec();
+
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    if (updateRoomDto.name) {
+      room.name = updateRoomDto.name;
+    }
+
+    if (updateRoomDto.image) {
+      room.image = updateRoomDto.image;
+    }
+
+    if (updateRoomDto.userIds) {
+      // Ensure the creator is always in the list of users and cannot be removed.
+      const creatorIdString = room.creator._id.toString();
+      if (!updateRoomDto.userIds.includes(creatorIdString)) {
+        updateRoomDto.userIds.push(creatorIdString);
+      }
+
+      // Prevent room from having less than 1 user (the creator)
+      if (updateRoomDto.userIds.length === 0) {
+          throw new BadRequestException('A room must have at least one user (the creator).');
+      }
+
+      const users = await this.userService.findMany(updateRoomDto.userIds);
+      if (users.length !== updateRoomDto.userIds.length) {
+        // This could happen if some userIds are invalid
+        throw new BadRequestException('One or more user IDs are invalid.');
+      }
+      room.users = users;
+    }
+
+    await room.save();
+    // Repopulate to ensure all fields are fresh, especially if users were modified by ID.
+    return this.roomModel.findById(room._id).populate('users').populate('creator').exec();
   }
 
   async deleteRoom(roomId: string): Promise<void> {
