@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsUrl } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class UpdateRoomDto {
   @IsNotEmpty()
@@ -9,4 +9,9 @@ export class UpdateRoomDto {
   @IsOptional()
   @IsUrl()
   image?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  userIds?: string[];
 }

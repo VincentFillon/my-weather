@@ -10,5 +10,5 @@ export class CreateRoomDto {
 
   @IsArray()
   @IsNotEmpty({ each: true })
-  usersIds: string[];
+  userIds: string[];
 }

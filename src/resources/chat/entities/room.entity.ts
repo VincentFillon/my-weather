@@ -21,6 +21,9 @@ export class Room {
   })
   users: User[];
 
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  creator: User;
+
   @Prop()
   createdAt: Date;
 
