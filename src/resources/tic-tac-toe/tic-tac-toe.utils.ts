@@ -80,42 +80,45 @@ export const minimax = (
     };
   }
 
-  // On crée un tableau pour stocker le score de chaque coup possible
   const moves: MinimaxResult[] = [];
-  for (var i = 0; i < emptyCells.length; i++) {
-    // On créé un clone de la grille de jeu pour dissocier les scénarios entre eux
-    const gridClone = [...grid];
-    // On initialise le prochain coup possible
+
+  for (let i = 0; i < emptyCells.length; i++) {
     const move: MinimaxResult = {
       index: emptyCells[i],
       score: 0,
     };
-    gridClone[emptyCells[i]] = player;
+    const newGrid = [...grid];
+    newGrid[emptyCells[i]] = player;
 
-    // On simule le coup du joueur suivant pour récupérer calculer le score cumulé
-    if (player == aiPlayer) {
-      const g = minimax(gridClone, huPlayer, aiPlayer, depth + 1);
-      move.score = g.score;
+    if (player === aiPlayer) {
+      const result = minimax(newGrid, huPlayer, aiPlayer, depth + 1);
+      move.score = result.score;
     } else {
-      const g = minimax(gridClone, aiPlayer, aiPlayer, depth + 1);
-      move.score = g.score;
+      const result = minimax(newGrid, aiPlayer, aiPlayer, depth + 1);
+      move.score = result.score;
     }
-
     moves.push(move);
   }
 
-  // On récupère le coup avec le meilleur score
-  let bestMove = 0;
-  let bestScore = -10;
-  for (let i = 0; i < moves.length; i++) {
-    if (moves[i].score > bestScore) {
-      bestScore = moves[i].score;
-      bestMove = i;
+  let bestMove: MinimaxResult;
+  if (player === aiPlayer) {
+    let bestScore = -Infinity;
+    for (let i = 0; i < moves.length; i++) {
+      if (moves[i].score > bestScore) {
+        bestScore = moves[i].score;
+        bestMove = moves[i];
+      }
+    }
+  } else {
+    let bestScore = Infinity;
+    for (let i = 0; i < moves.length; i++) {
+      if (moves[i].score < bestScore) {
+        bestScore = moves[i].score;
+        bestMove = moves[i];
+      }
     }
   }
-
-  // On retourne le meilleur coup
-  return moves[bestMove];
+  return bestMove;
 };
 
 /**
