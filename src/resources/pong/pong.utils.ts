@@ -15,9 +15,9 @@ export const fieldSize = { x: 200, y: 150 };
 export const racketWidth = 5;
 export const racketHeight = 30;
 export const ballRadius = 5;
-export const ballMinVelocity = 40;
+export const ballMinVelocity = 100;
 export const ballMaxVelocity = 150;
-export const maxIARacketVelocity = 150;
+export const maxIARacketVelocity = 100;
 
 export const updateBallPosition = (
   game: PongDocument,
@@ -49,6 +49,7 @@ export const calcRacketBounce = (
   ballVx: number,
   ballVy: number,
   ballVelocity: number,
+  logger?: Logger,
 ): Bounce => {
   // 1. Inversion de la direction X (rebond de base).
   const newBallVx = -ballVx;
@@ -57,16 +58,49 @@ export const calcRacketBounce = (
   const relativeImpactY = ballPosition.y - racketPosition.y;
   const normalizedImpact = relativeImpactY / (racketHeight / 2); // entre -1 et 1
 
-  // 3. Calcul de l'ajustement de l'angle du rebond
-  const bounceAngle = normalizedImpact * 0.5 + racketVelocity * 0.3; // Ajustement
-  const originalAngle = Math.atan2(ballVy, ballVx);
-  const newAngle = originalAngle + bounceAngle;
-  // Augmenter la vitesse de la balle
-  let newBallVelocity = ballVelocity * 1.05;
-  if (Math.abs(racketVelocity) > ballVelocity) {
-    newBallVelocity += Math.abs(racketVelocity) * 0.05;
+  // 3. Calcul de l'angle de rebond basé sur la position d'impact et la vitesse de la raquette (spin)
+  // Angle de rebond de base (plus la balle frappe le bord, plus l'angle est prononcé)
+  // Utilisation de Math.PI / 3 (60 degrés) comme angle maximal pour un impact sur le bord
+  // 3. Calcul de l'angle de rebond basé sur la position d'impact et la vitesse de la raquette (spin)
+  const maxBounceAngle = Math.PI / 3; // 60 degrés, pour un rebond plus dynamique
+  const spinFactor = 0.005; // Réduit l'effet de spin pour le rendre plus subtil
+
+  let newAngle: number;
+  let newBallVy: number;
+  let newBallVelocity = ballVelocity * 1.05; // Augmentation de base de la vitesse
+
+  // Détection d'un impact sur les coins de la raquette
+  const cornerThreshold = 0.9; // Si normalizedImpact est > 0.9 ou < -0.9
+  if (Math.abs(normalizedImpact) > cornerThreshold) {
+    // Effet spécial pour les coins : augmentation de vitesse et inversion de la direction Y
+    newBallVelocity = ballVelocity * 1.15; // Augmentation plus significative de la vitesse
+    newBallVy = -ballVy; // Inversion de la direction Y pour un effet "smash" ou "coupé"
+    // Ajuster légèrement l'angle pour donner une direction en fonction du coin touché
+    newAngle = normalizedImpact * maxBounceAngle;
+    newBallVy = newBallVelocity * Math.sin(newAngle); // Recalculer Vy avec le nouvel angle
+  } else {
+    // Calcul de l'angle de rebond normal
+    newAngle = normalizedImpact * maxBounceAngle;
+
+    // Ajout de l'effet de "spin" basé sur la vitesse de la raquette (réduit)
+    newAngle += racketVelocity * spinFactor;
+
+    // Limiter l'angle pour éviter des rebonds trop verticaux ou inversés
+    newAngle = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, newAngle));
+
+    // Si la vitesse de la raquette est supérieure à la vitesse de la balle, augmenter la vitesse de la balle
+    if (Math.abs(racketVelocity) > ballVelocity) {
+      newBallVelocity += Math.abs(racketVelocity) * 0.05;
+    }
+
+    // Calcul des nouvelles composantes de vitesse
+    // Conserver la direction verticale (signe de ballVy)
+    newBallVy = newBallVelocity * Math.sin(newAngle);
+    // S'assurer que la direction Y ne s'inverse pas si elle ne devrait pas
+    if (Math.sign(ballVy) !== Math.sign(newBallVy) && Math.abs(normalizedImpact) < 0.5) {
+        newBallVy *= -1; // Inverser si le signe a changé de manière inattendue pour les impacts centraux
+    }
   }
-  const newBallVy = newBallVelocity * Math.sin(newAngle);
   return {
     x: newBallVx,
     y: newBallVy,
@@ -84,7 +118,7 @@ export const checkRacketCollision = (game: PongDocument, logger?: Logger) => {
       game.player1RacketPosition.y + racketHeight / 2
   ) {
     logger?.log(
-      `[${game._id.toString()}] Balle : rebond sur la raquette de gauche`,
+      `[${game._id.toString()}] Balle : rebond sur la raquette de gauche...`,
     );
     const bounce = calcRacketBounce(
       game.player1RacketPosition,
@@ -93,6 +127,7 @@ export const checkRacketCollision = (game: PongDocument, logger?: Logger) => {
       game.ballVx,
       game.ballVy,
       game.ballVelocity,
+      logger,
     );
     logger?.log(
       `[${game._id.toString()}] Balle : changement de direction { x: ${game.ballVx}, y: ${game.ballVy} } => { x: ${bounce.x}, y: ${bounce.y} }`,
@@ -121,6 +156,7 @@ export const checkRacketCollision = (game: PongDocument, logger?: Logger) => {
       game.ballVx,
       game.ballVy,
       game.ballVelocity,
+      logger,
     );
     game.ballVx = bounce.x; // Mise à jour de la vitesse
     game.ballVy = bounce.y; // Mise à jour de la vitesse
@@ -171,27 +207,68 @@ export const logRandomInt = (maxValue: number): number => {
 };
 
 export const moveIAPlayer = (game: PongDocument, deltaTime: number) => {
-  const maxRacketSpeed = logRandomInt(maxIARacketVelocity); // Aléatoire
-  const ballTargetY = game.ballPosition.y;
+  // Vitesse de base de la raquette de l'IA (peut être ajustée pour la difficulté)
+  const baseRacketSpeed = maxIARacketVelocity * 0.6; // Réduit à 60% pour rendre l'IA moins forte
+  // Petite variation aléatoire pour simuler un comportement moins prévisible
+  const maxRacketSpeed = baseRacketSpeed + (Math.random() * 30 - 15); // +/- 15 de variation
 
-  // Ajout d'une "erreur" aléatoire à la position cible
-  const aimError = logRandomInt(30) - 15; // Plage de -15 à +15 pixels
-  const targetYWithAimError = ballTargetY + aimError;
+  // Prédiction de la position future de la balle
+  // Calcul du temps estimé pour que la balle atteigne la raquette de l'IA
+  const timeToReachRacket =
+    Math.abs(fieldSize.x - racketWidth - game.ballPosition.x) /
+    Math.abs(game.ballVx);
+
+  // Prédiction de la position Y de la balle au moment de l'impact
+  let predictedBallY = game.ballPosition.y + game.ballVy * timeToReachRacket;
+
+  // Gérer les rebonds de la balle sur les murs pendant la prédiction
+  // Si la balle va rebondir sur un mur avant d'atteindre la raquette de l'IA
+  if (predictedBallY < ballRadius || predictedBallY > fieldSize.y - ballRadius) {
+    // Calculer le temps jusqu'au premier rebond
+    const timeToWall =
+      game.ballVy > 0
+        ? (fieldSize.y - ballRadius - game.ballPosition.y) / game.ballVy
+        : (ballRadius - game.ballPosition.y) / game.ballVy;
+
+    // Si le rebond se produit avant d'atteindre la raquette de l'IA
+    if (timeToWall < timeToReachRacket) {
+      predictedBallY =
+        (game.ballPosition.y + game.ballVy * timeToWall) * -1 +
+        (game.ballVy > 0 ? fieldSize.y - ballRadius : ballRadius);
+      // Ajuster la position prédite après le rebond
+      predictedBallY =
+        (game.ballPosition.y + game.ballVy * timeToWall) +
+        (game.ballVy * (timeToReachRacket - timeToWall)) * -1;
+    }
+  }
+
+  // Ajout d'une "erreur" plus subtile et contrôlée
+  // L'erreur peut être basée sur la difficulté ou un facteur aléatoire plus petit
+  const aimError = (Math.random() * 20 - 10); // Plage de -10 à +10 pixels, plus d'erreurs
+  const targetYWithAimError = predictedBallY + aimError;
 
   // Calcul de la distance à parcourir
   const distanceToTarget = targetYWithAimError - game.player2RacketPosition.y;
 
-  // La vitesse max dépend aléatoirement,
-  // on gère la fluidité et le comportement en limitant la vitesse
-  const dy = Math.min(
-    Math.max(
-      distanceToTarget,
-      -maxRacketSpeed * deltaTime, // Vitesse minimale
-    ),
-    maxRacketSpeed * deltaTime, // Vitesse maximale
-  );
+  // Introduire une "zone morte" pour éviter le tremblement
+  const deadZone = 10; // Augmenté à 10 pixels pour réduire le tremblement
+  let dy = 0;
+
+  if (Math.abs(distanceToTarget) > deadZone) {
+    // Déplacement de la raquette avec une vitesse limitée
+    dy = Math.min(
+      Math.max(
+        distanceToTarget,
+        -maxRacketSpeed * deltaTime, // Vitesse minimale
+      ),
+      maxRacketSpeed * deltaTime, // Vitesse maximale
+    );
+  }
 
   // Déplacement de la raquette
   const newY = game.player2RacketPosition.y + dy;
-  game.player2RacketPosition.y = Math.min(Math.max(newY, 0), fieldSize.y);
+  game.player2RacketPosition.y = Math.min(
+    Math.max(newY, racketHeight / 2), // Limite supérieure
+    fieldSize.y - racketHeight / 2, // Limite inférieure
+  );
 };
