@@ -17,6 +17,9 @@ export class Mood {
   image: string;
 
   @Prop()
+  color?: string;
+
+  @Prop()
   sound?: string;
 
   @Prop()
