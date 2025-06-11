@@ -1,4 +1,4 @@
-import { Allow, IsInt, IsNotEmpty, Min } from 'class-validator';
+import { Allow, IsInt, IsNotEmpty, IsOptional, Min } from 'class-validator';
 
 export class CreateMoodDto {
   @IsNotEmpty()
@@ -10,6 +10,10 @@ export class CreateMoodDto {
 
   @IsNotEmpty()
   image: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  color?: string;
 
   @Allow()
   sound?: string;

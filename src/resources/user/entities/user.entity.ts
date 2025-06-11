@@ -28,6 +28,9 @@ export class User {
   mood: Mood | null = null;
 
   @Prop()
+  moodUpdatedAt?: Date;
+
+  @Prop()
   createdAt?: Date;
 
   @Prop()
@@ -35,3 +38,11 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.pre('findOneAndUpdate', function (next) {
+  const update = this.getUpdate() as any;
+  if (update && update.$set && update.$set.mood !== undefined) {
+    update.$set.moodUpdatedAt = new Date();
+  }
+  next();
+});
