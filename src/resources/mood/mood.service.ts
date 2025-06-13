@@ -33,8 +33,9 @@ export class MoodService {
     id: string,
     updateMoodDto: UpdateMoodDto,
   ): Promise<MoodDocument> {
-    await this.moodModel.findByIdAndUpdate(id, updateMoodDto).exec();
-    return this.findOne(id);
+    return this.moodModel
+      .findByIdAndUpdate(id, updateMoodDto, { new: true })
+      .exec();
   }
 
   async remove(id: string): Promise<MoodDocument> {

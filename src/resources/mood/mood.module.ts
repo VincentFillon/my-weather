@@ -19,5 +19,6 @@ import { MoodService } from './mood.service';
     forwardRef(() => AuthModule),
   ],
   providers: [MoodGateway, MoodService, MoodExistsValidator],
+  exports: [MoodService, MoodExistsValidator],
 })
 export class MoodModule {}

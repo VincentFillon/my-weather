@@ -40,7 +40,7 @@ export class ChatService {
     const userIdsWithCreator = Array.from(new Set([...createRoomDto.userIds, creatorId]));
 
     const users = await this.userService.findMany(userIdsWithCreator);
-    if (users.length < 2 && userIdsWithCreator.length < 2) { // Also check original list length in case of duplicate creatorId
+    if (!createRoomDto.isChatBot && users.length < 2 && userIdsWithCreator.length < 2) { // Also check original list length in case of duplicate creatorId
       throw new BadRequestException(
         'At least two users (including the creator) are required to create a room',
       );
@@ -50,6 +50,7 @@ export class ChatService {
       name: createRoomDto.name,
       image: createRoomDto.image,
       users: users,
+      isChatBot: createRoomDto.isChatBot || false, // Default to false if not provided
       creator: creator, // Assign the creator object
     };
 

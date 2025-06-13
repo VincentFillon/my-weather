@@ -24,6 +24,9 @@ export class Room {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
 
+  @Prop({ type: Boolean, default: false })
+  isChatBot?: boolean; // Indique si la room est un bot de chat
+
   @Prop()
   createdAt: Date;
 
