@@ -22,8 +22,8 @@ export class Message {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true })
   room: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  sender: User;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  sender: User | null;
 
   @Prop({
     type: String,

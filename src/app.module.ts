@@ -13,6 +13,7 @@ import { AppService } from 'src/app.service';
 import { JwtStrategy } from 'src/config/jwt.strategy';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { AiMoodMessageModule } from 'src/resources/ai-mood-message/ai-mood-message.module'; // Import du module AI Mood
 import { AuthModule } from 'src/resources/auth/auth.module';
 import { ChatModule } from 'src/resources/chat/chat.module';
 import { MoodModule } from 'src/resources/mood/mood.module';
@@ -52,6 +53,7 @@ import { TasksService } from 'src/tasks/tasks.service';
     PublicHolidaysModule,
     ChatModule,
     PollModule,
+    AiMoodMessageModule, // Ajout du module AI Mood
   ],
   controllers: [AppController],
   providers: [

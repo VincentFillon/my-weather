@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { ApiTags } from '@nestjs/swagger';
 import {
@@ -81,7 +82,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       createRoomDto.userIds.push(currentUser.sub);
     }
 
-    const room = await this.chatService.createRoom(createRoomDto, currentUser.sub);
+    const room = await this.chatService.createRoom(
+      createRoomDto,
+      currentUser.sub,
+    );
 
     // Notifier tous les membres (y compris le créateur) via leur room personnelle
     room.users.forEach((user) => {
@@ -329,13 +333,53 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (userIdStr !== currentUser.sub) {
         // Ne pas notifier l'envoyeur
         this.server.to(`user_${userIdStr}`).emit('newMessageNotification', {
-          roomId: roomId,
+          roomId,
           message,
         });
       }
     });
 
     return message;
+  }
+
+  @OnEvent('chat.bot.message')
+  async handleBotMessage(payload: {
+    to: string;
+    content: string;
+    botName: string;
+  }) {
+    // Vérifier si la room "ChatBot" existe pour cet utilisateur
+    const userRooms = await this.chatService.findByUser(payload.to);
+    let room = userRooms.find((r) => r.isChatBot && r.name === payload.botName);
+
+    if (!room) {
+      // Si la room n'existe pas, la créer
+      room = await this.chatService.createRoom(
+        {
+          name: payload.botName,
+          userIds: [payload.to],
+          isChatBot: true,
+        },
+        payload.to,
+      );
+
+      this.server.to(`user_${payload.to}`).emit('roomCreated', room);
+    }
+
+    const roomId = room._id.toString();
+
+    const message = await this.chatService.sendMessage({
+      room: roomId,
+      content: payload.content,
+      sender: null,
+    });
+
+    this.server.to(`chat_${roomId}`).emit('messageSent', message);
+
+    this.server.to(`user_${payload.to}`).emit('newMessageNotification', {
+      roomId,
+      message,
+    });
   }
 
   @SubscribeMessage('addReaction')
@@ -348,7 +392,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new UnauthorizedException();
     }
 
-    this.logger.log(`[Chat WS] User ${currentUser.sub} ajoute une réaction sur le message ${data.messageId} avec l'emoji ${data.emoji}`);
+    this.logger.log(
+      `[Chat WS] User ${currentUser.sub} ajoute une réaction sur le message ${data.messageId} avec l'emoji ${data.emoji}`,
+    );
 
     const message = await this.chatService.addReaction(
       data.messageId,
@@ -375,7 +421,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new UnauthorizedException();
     }
 
-    this.logger.log(`[Chat WS] User ${currentUser.sub} supprime une réaction sur le message ${data.messageId} avec l'emoji ${data.emoji}`);
+    this.logger.log(
+      `[Chat WS] User ${currentUser.sub} supprime une réaction sur le message ${data.messageId} avec l'emoji ${data.emoji}`,
+    );
 
     const message = await this.chatService.removeReaction(
       data.messageId,

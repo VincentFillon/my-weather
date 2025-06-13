@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UserHistoryFilters } from 'src/resources/user-history/dto/user-history.filters';
@@ -14,6 +14,7 @@ import { PaginatedResults } from 'src/utils/paginated.results';
 export class UserHistoryService {
   constructor(
     @InjectModel(UserHistory.name) private userHistoryModel: Model<UserHistory>,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   @OnEvent('user.mood.updated')
@@ -26,7 +27,14 @@ export class UserHistoryService {
       mood: user.mood,
       updatedBy: updatedBy || null,
     });
-    return userHistory.save();
+
+    await userHistory.save();
+
+    if (updatedBy && updatedBy._id.toString() === user._id.toString()) {
+      this.eventEmitter.emit('user.history.updated', userHistory);
+    }
+
+    return userHistory;
   }
 
   findAll(): Promise<UserHistoryDocument[]> {

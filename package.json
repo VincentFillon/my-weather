@@ -1,6 +1,6 @@
 {
   "name": "meteo",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "",
   "author": "",
   "private": true,
@@ -22,6 +22,8 @@
     "docker:run": "dotenv -- sh -c 'docker run -p ${PORT:-3000}:${PORT:-3000} --name meteo meteo'"
   },
   "dependencies": {
+    "@google/genai": "^1.5.0",
+    "@modelcontextprotocol/sdk": "^1.12.2",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/cache-manager": "^3.0.0",
     "@nestjs/common": "^11.0.2",

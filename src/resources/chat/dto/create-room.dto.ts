@@ -11,4 +11,7 @@ export class CreateRoomDto {
   @IsArray()
   @IsNotEmpty({ each: true })
   userIds: string[];
+
+  @IsOptional()
+  isChatBot?: boolean;
 }
