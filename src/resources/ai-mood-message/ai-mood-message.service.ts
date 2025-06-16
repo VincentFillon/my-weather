@@ -238,12 +238,16 @@ Prends en compte le jour de la semaine et l'heure pour adapter ton ton :
     const analysis = this.analyzeTrends(moods, moodHistory, currentMood.name);
 
     const now = new Date();
-    const weekday = now.toLocaleString('fr-FR', { weekday: 'long' });
-    const hour = now.getHours();
+    // Calculer l'heure locale de l'utilisateur (en supposant que le serveur est en UTC)
+    // TODO: Pour une vraie app multi-zone, il faudrait stocker la timezone de l'utilisateur
+    const localOffsetMinutes = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - localOffsetMinutes * 60 * 1000);
+    const weekday = localDate.toLocaleString('fr-FR', { weekday: 'long' });
+    const hour = localDate.getHours();
 
     // Si c'est la première fois de la semaine que l'utilisateur définit son humeur
     let firstPick = '';
-    if (moodHistory[moodHistory.length - 1].from.getDay() !== now.getDay()) {
+    if (moodHistory[moodHistory.length - 1].from.getDay() !== localDate.getDay()) {
       if (weekday === 'lundi') {
         firstPick = ` (c'est la première fois de la semaine que l'utilisateur définit son humeur)`;
       } else {
