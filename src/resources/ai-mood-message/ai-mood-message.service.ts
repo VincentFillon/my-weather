@@ -22,7 +22,7 @@ interface AiMoodPeriod {
 export class AiMoodMessageService {
   private logger: Logger = new Logger(AiMoodMessageService.name);
   private lastRequestTime: Map<string, number> = new Map(); // Pour la limitation d'usage
-  private readonly COOLDOWN_MS = 10 * 1000; // 10 secondes de cooldown
+  private readonly COOLDOWN_MS = 30 * 1000; // 30 secondes de cooldown
 
   private readonly AI_MOOD_BOT_NAME = 'AI Mood Bot';
 
@@ -51,7 +51,15 @@ export class AiMoodMessageService {
     this.model = models[0]?.modelName || 'gemini-2.0-flash-lite';
     this.systemInstruction =
       models[0]?.systemInstruction ||
-      "Tu es un chatbot sarcastique et aigri avec un humour noir. Ton rôle est de réagir à un changement d'humeur de l'utilisateur par un message court, piquant, drôle et incisif. Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis de sa naïveté et de sa niaiserie.";
+      `Tu es un chatbot sarcastique et aigri avec un humour noir. Ton rôle est de réagir à un changement d'humeur de l'utilisateur par un message court, piquant, drôle et incisif.
+Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis de sa naïveté et de sa niaiserie.
+
+Prends en compte le jour de la semaine et l'heure pour adapter ton ton :
+- Le lundi matin, souligne la déprime, le manque de motivation, ou l'absurdité de commencer une nouvelle semaine.
+- Le mercredi, fais allusion à la semaine interminable ("on n'est qu'au milieu, courage... ou pas").
+- Le vendredi après-midi, sois un peu plus enthousiaste (façon sarcastique) sur l'arrivée du week-end.
+- Le week-end, ironise sur le repos mérité ou sur la solitude existentielle du samedi soir.
+- Si l'utilisateur définit son humeur pour la première fois de la semaine, accorde beaucoup moins d'importance à son humeur précédente ou à l'analyse de ses 7 derniers jours, insiste sur son humeur actuelle pour un début de semaine.`;
   }
 
   @OnEvent('user.history.updated')
@@ -184,6 +192,12 @@ export class AiMoodMessageService {
       else break;
     }
 
+    // Récupérer les 5 dernières humeurs
+    const lastMoods = validPeriods
+      .slice(-5)
+      .map((p) => `« ${p.mood.name} » (${p.duration / (1000 * 60)} min)`)
+      .join(', ');
+
     // 7) Évaluer si le changement est inhabituel
     const prevMood =
       validPeriods.length > 0
@@ -194,7 +208,8 @@ export class AiMoodMessageService {
       moodIndex.has(prevMood.name) &&
       Math.abs(
         (moodIndex.get(currentMood) ?? 0) - moodIndex.get(prevMood.name),
-      ) > 1;
+      ) >=
+        allMoods.length / 2;
 
     // 8) Construire le texte d'analyse
     const parts: string[] = [];
@@ -202,9 +217,12 @@ export class AiMoodMessageService {
     parts.push(
       `Indice moyen : ${avgIdx.toFixed(2)} (0 = très positif, ${allMoods.length - 1} = très négatif)`,
     );
-    parts.push(
-      `Série actuelle : ${streak} sélection${streak > 1 ? 's' : ''} de « ${currentMood} »`,
-    );
+    parts.push(`5 dernières humeurs : ${lastMoods}`);
+    if (streak > 1) {
+      parts.push(
+        `Série actuelle : ${streak} sélection${streak > 1 ? 's' : ''} de « ${currentMood} »`,
+      );
+    }
     if (changeUnusual) {
       parts.push("Changement atypique par rapport à l'humeur précédente.");
     }
@@ -219,6 +237,20 @@ export class AiMoodMessageService {
   ): string {
     const analysis = this.analyzeTrends(moods, moodHistory, currentMood.name);
 
+    const now = new Date();
+    const weekday = now.toLocaleString('fr-FR', { weekday: 'long' });
+    const hour = now.getHours();
+
+    // Si c'est la première fois de la semaine que l'utilisateur définit son humeur
+    let firstPick = '';
+    if (moodHistory[moodHistory.length - 1].from.getDay() !== now.getDay()) {
+      if (weekday === 'lundi') {
+        firstPick = ` (c'est la première fois de la semaine que l'utilisateur définit son humeur)`;
+      } else {
+        firstPick = ` (c'est la première fois de la journée que l'utilisateur définit son humeur)`;
+      }
+    }
+
     // Logique pour construire un prompt intelligent basé sur l'humeur actuelle et l'historique
     return `L'utilisateur a changé son humeur. Voici les détails :
 
@@ -228,7 +260,10 @@ ${moods
   .map((m) => `« ${m.name} » (Indice: ${m.order}) `)
   .join('\n')}
 
-Humeur actuelle de l'utilisateur : « ${currentMood.name} »
+Jour actuel : ${weekday}
+Heure actuelle : ${hour}h
+
+Humeur actuelle de l'utilisateur : « ${currentMood.name} »${firstPick}
 Humeur précedente de l'utilisateur : « ${moodHistory[moodHistory.length - 1].mood.name} »
 
 Analyse des 7 derniers jours :
