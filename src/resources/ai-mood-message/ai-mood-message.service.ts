@@ -30,6 +30,8 @@ export class AiMoodMessageService {
 
   private model: string;
   private systemInstruction: string;
+  private lastConfigLoadTime: number = 0; // Timestamp de la dernière fois que la config a été chargée
+  private readonly CONFIG_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor(
     @InjectModel(GeminiModel.name)
@@ -40,11 +42,24 @@ export class AiMoodMessageService {
   ) {}
 
   async init() {
-    const models = await this.geminiModel.find();
-    if (!models || models.length === 0) {
-      this.logger.error('No Gemini models found. AI Mood Bot will not work.');
+    await this.loadGeminiConfig();
+  }
+
+  private async loadGeminiConfig(): Promise<void> {
+    const now = Date.now();
+    if (this.lastConfigLoadTime && (now - this.lastConfigLoadTime < this.CONFIG_REFRESH_INTERVAL_MS)) {
+      // Ne pas recharger si le dernier chargement est trop récent
       return;
     }
+
+    this.logger.log('[AI Mood] Rechargement de la configuration Gemini...');
+    const models = await this.geminiModel.find();
+    if (!models || models.length === 0) {
+      this.logger.error('Aucun modèle Gemini trouvé. Le bot AI Mood ne fonctionnera pas.');
+      this.ai = null; // S'assurer que l'IA est désactivée si aucune config n'est trouvée
+      return;
+    }
+
     this.ai = new GoogleGenAI({
       apiKey: models[0]?.apiKey,
     });
@@ -52,14 +67,9 @@ export class AiMoodMessageService {
     this.systemInstruction =
       models[0]?.systemInstruction ||
       `Tu es un chatbot sarcastique et aigri avec un humour noir. Ton rôle est de réagir à un changement d'humeur de l'utilisateur par un message court, piquant, drôle et incisif.
-Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis de sa naïveté et de sa niaiserie.
-
-Prends en compte le jour de la semaine et l'heure pour adapter ton ton :
-- Le lundi matin, souligne la déprime, le manque de motivation, ou l'absurdité de commencer une nouvelle semaine.
-- Le mercredi, fais allusion à la semaine interminable ("on n'est qu'au milieu, courage... ou pas").
-- Le vendredi après-midi, sois un peu plus enthousiaste (façon sarcastique) sur l'arrivée du week-end.
-- Le week-end, ironise sur le repos mérité ou sur la solitude existentielle du samedi soir.
-- Si l'utilisateur définit son humeur pour la première fois de la semaine, accorde beaucoup moins d'importance à son humeur précédente ou à l'analyse de ses 7 derniers jours, insiste sur son humeur actuelle pour un début de semaine.`;
+Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis de sa naïveté et de sa niaiserie.`;
+    this.lastConfigLoadTime = now;
+    this.logger.log('[AI Mood] Configuration Gemini rechargée avec succès.');
   }
 
   @OnEvent('user.history.updated')
@@ -247,7 +257,9 @@ Prends en compte le jour de la semaine et l'heure pour adapter ton ton :
 
     // Si c'est la première fois de la semaine que l'utilisateur définit son humeur
     let firstPick = '';
-    if (moodHistory[moodHistory.length - 1].from.getDay() !== localDate.getDay()) {
+    if (
+      moodHistory[moodHistory.length - 1].from.getDay() !== localDate.getDay()
+    ) {
       if (weekday === 'lundi') {
         firstPick = ` (c'est la première fois de la semaine que l'utilisateur définit son humeur)`;
       } else {
@@ -277,13 +289,12 @@ Génère une phrase dans le style : moqueuse, cinglante. PAS de message neutre n
   }
 
   private async generateAiMessage(prompt: string): Promise<string | null> {
+    // Vérifier et recharger la configuration si nécessaire
+    await this.loadGeminiConfig();
+
     if (!this.ai) {
-      // On essaye de réinitialiser l'IA si elle n'est pas initialisée
-      await this.init();
-      if (!this.ai) {
-        this.logger.error('AI client is not initialized.');
-        return null;
-      }
+      this.logger.error('Le client AI n\'est pas initialisé. Impossible de générer un message.');
+      return null;
     }
 
     // Pour l'instant, on retourne le prompt comme si c'était la réponse de l'IA:
