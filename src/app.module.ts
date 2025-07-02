@@ -20,6 +20,7 @@ import { MoodModule } from 'src/resources/mood/mood.module';
 import { PollModule } from 'src/resources/poll/poll.module';
 import { PongModule } from 'src/resources/pong/pong.module';
 import { PublicHolidaysModule } from 'src/resources/public-holidays/public-holidays.module';
+import { TenorModule } from 'src/resources/tenor/tenor.module';
 import { TicTacToeModule } from 'src/resources/tic-tac-toe/tic-tac-toe.module';
 import { UploadModule } from 'src/resources/upload/upload.module';
 import { UserHistoryModule } from 'src/resources/user-history/user-history.module';
@@ -53,7 +54,8 @@ import { TasksService } from 'src/tasks/tasks.service';
     PublicHolidaysModule,
     ChatModule,
     PollModule,
-    AiMoodMessageModule, // Ajout du module AI Mood
+    AiMoodMessageModule,
+    TenorModule,
   ],
   controllers: [AppController],
   providers: [
