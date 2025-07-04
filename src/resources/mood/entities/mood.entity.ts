@@ -23,6 +23,9 @@ export class Mood {
   sound?: string;
 
   @Prop()
+  backgroundImg?: string;
+
+  @Prop()
   createdAt?: Date;
 
   @Prop()
