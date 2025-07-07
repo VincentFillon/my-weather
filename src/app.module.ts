@@ -16,6 +16,7 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { AiMoodMessageModule } from 'src/resources/ai-mood-message/ai-mood-message.module'; // Import du module AI Mood
 import { AuthModule } from 'src/resources/auth/auth.module';
 import { ChatModule } from 'src/resources/chat/chat.module';
+import { MoodChartModule } from 'src/resources/mood-chart/mood-chart.module';
 import { MoodModule } from 'src/resources/mood/mood.module';
 import { PollModule } from 'src/resources/poll/poll.module';
 import { PongModule } from 'src/resources/pong/pong.module';
@@ -56,6 +57,7 @@ import { TasksService } from 'src/tasks/tasks.service';
     PollModule,
     AiMoodMessageModule,
     TenorModule,
+    MoodChartModule,
   ],
   controllers: [AppController],
   providers: [
