@@ -16,6 +16,6 @@ export class MoodChartController {
   @ApiResponse({ status: 200, description: 'Données du graphique récupérées avec succès.', type: [MoodChartDataDto] })
   @ApiResponse({ status: 401, description: 'Non autorisé.' })
   async getMoodChartData(@Request() req): Promise<MoodChartDataDto[]> {
-    return this.moodChartService.getMoodChartData(req.user.userId);
+    return this.moodChartService.getMoodChartData(req.user.sub);
   }
 }
