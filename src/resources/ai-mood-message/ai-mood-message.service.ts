@@ -191,9 +191,9 @@ Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis
     const dominantMood = allMoods.find((m) => m.order === dominantIdx).name;
 
     // 5) Calculer l'indice moyen pondéré par la durée
-    const totalTime = durations.reduce((a, b) => a + b, 0) || 1;
-    const avgIdx =
-      durations.map((d, i) => d * i).reduce((a, b) => a + b, 0) / totalTime;
+    // const totalTime = durations.reduce((a, b) => a + b, 0) || 1;
+    // const avgIdx =
+    //   durations.map((d, i) => d * i).reduce((a, b) => a + b, 0) / totalTime;
 
     // 6) Longueur de la série actuelle (streak) de la même humeur
     let streak = 0;
@@ -203,10 +203,10 @@ Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis
     }
 
     // Récupérer les 5 dernières humeurs
-    const lastMoods = validPeriods
-      .slice(-5)
-      .map((p) => `« ${p.mood.name} » (${p.duration / (1000 * 60)} min)`)
-      .join(', ');
+    // const lastMoods = validPeriods
+    //   .slice(-5)
+    //   .map((p) => `« ${p.mood.name} » (${p.duration / (1000 * 60)} min)`)
+    //   .join(', ');
 
     // 7) Évaluer si le changement est inhabituel
     const prevMood =
@@ -223,21 +223,15 @@ Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis
 
     // 8) Construire le texte d'analyse
     const parts: string[] = [];
-    parts.push(`Humeur dominante sur 7j : « ${dominantMood} »`);
-    parts.push(
-      `Indice moyen : ${avgIdx.toFixed(2)} (0 = très positif, ${allMoods.length - 1} = très négatif)`,
-    );
-    parts.push(`5 dernières humeurs : ${lastMoods}`);
+    parts.push(`Tendance dominante : « ${dominantMood} ».`);
     if (streak > 1) {
-      parts.push(
-        `Série actuelle : ${streak} sélection${streak > 1 ? 's' : ''} de « ${currentMood} »`,
-      );
+      parts.push(`C'est la ${streak}e fois de suite qu'il choisit "${currentMood}".`);
     }
     if (changeUnusual) {
-      parts.push("Changement atypique par rapport à l'humeur précédente.");
+      parts.push(`Ce changement est brutal par rapport à l'humeur d'avant.`);
     }
 
-    return parts.join(' \n');
+    return parts.join(' ');
   }
 
   private buildAiPrompt(
@@ -247,45 +241,31 @@ Si l'utilisateur est souvent dans des humeurs positives, sois moqueur vis à vis
   ): string {
     const analysis = this.analyzeTrends(moods, moodHistory, currentMood.name);
 
-    const now = new Date();
-    // Calculer l'heure locale de l'utilisateur (en supposant que le serveur est en UTC)
-    // TODO: Pour une vraie app multi-zone, il faudrait stocker la timezone de l'utilisateur
-    const localOffsetMinutes = now.getTimezoneOffset();
-    const localDate = new Date(now.getTime() - localOffsetMinutes * 60 * 1000);
-    const weekday = localDate.toLocaleString('fr-FR', { weekday: 'long' });
-    const hour = localDate.getHours();
+    // NE PAS envoyer le jour et l'heure directement. Le system prompt s'en charge.
+    // Votre system prompt est déjà conditionné pour réagir différemment selon le moment.
 
-    // Si c'est la première fois de la semaine que l'utilisateur définit son humeur
-    let firstPick = '';
-    if (
-      moodHistory[moodHistory.length - 1].from.getDay() !== localDate.getDay()
-    ) {
-      if (weekday === 'lundi') {
-        firstPick = ` (c'est la première fois de la semaine que l'utilisateur définit son humeur)`;
-      } else {
-        firstPick = ` (c'est la première fois de la journée que l'utilisateur définit son humeur)`;
-      }
+    const previousMood = moodHistory.length > 0 ? moodHistory[moodHistory.length - 1].mood : null;
+
+    // Créez un prompt beaucoup plus simple et direct.
+    // Le modèle a déjà les instructions et les exemples dans le system prompt.
+    // Donnez-lui juste le strict nécessaire pour la tâche actuelle.
+
+    const promptParts = [
+      `Contexte pour ta réponse :`,
+      `- Humeur Actuelle : "${currentMood.name}"`,
+    ];
+
+    if (previousMood) {
+      promptParts.push(`- Humeur Précédente : "${previousMood.name}"`);
     }
 
-    // Logique pour construire un prompt intelligent basé sur l'humeur actuelle et l'historique
-    return `L'utilisateur a changé son humeur. Voici les détails :
+    // Fournissez l'analyse sous forme de points clés plutôt qu'un bloc de texte.
+    promptParts.push(`- Analyse de l'historique (7j) : ${analysis}`);
 
-Liste des humeurs disponibles :
-${moods
-  .sort((a, b) => a.order - b.order)
-  .map((m) => `« ${m.name} » (Indice: ${m.order}) `)
-  .join('\n')}
+    // La dernière ligne est l'instruction de ce qu'il doit faire MAINTENANT.
+    promptParts.push(`\nGénère la réponse sarcastique et appropriée.`);
 
-Jour actuel : ${weekday}
-Heure actuelle : ${hour}h
-
-Humeur actuelle de l'utilisateur : « ${currentMood.name} »${firstPick}
-Humeur précedente de l'utilisateur : « ${moodHistory[moodHistory.length - 1].mood.name} »
-
-Analyse des 7 derniers jours :
-${analysis}
-
-Génère une phrase dans le style : moqueuse, cinglante. PAS de message neutre ni trop gentil.`;
+    return promptParts.join('\n');
   }
 
   private async generateAiMessage(prompt: string): Promise<string | null> {
