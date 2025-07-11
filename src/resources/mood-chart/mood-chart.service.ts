@@ -84,9 +84,9 @@ export class MoodChartService {
   }
 
   private async calculateMedianMoodForDate(date: Date): Promise<number> {
-    this.logger.debug(
-      `Calcul de l'humeur médiane pondérée pour la date : ${moment(date).format('YYYY-MM-DD')}`,
-    );
+    // this.logger.debug(
+    //   `Calcul de l'humeur médiane pondérée pour la date : ${moment(date).format('YYYY-MM-DD')}`,
+    // );
 
     const cacheKey = `median_mood_weighted_${moment(date).format('YYYY-MM-DD')}`;
     let medianMood = await this.cacheManager.get<number>(cacheKey);
@@ -104,9 +104,9 @@ export class MoodChartService {
         endOfDay,
       );
 
-      this.logger.debug(
-        `Historique des changements d'humeurs pour la journée : ${allUserHistories.length} entrées trouvées`,
-      );
+      // this.logger.debug(
+      //   `Historique des changements d'humeurs pour la journée : ${allUserHistories.length} entrées trouvées`,
+      // );
 
       // Regrouper l'historique par utilisateur
       const userHistoriesMap = new Map<string, UserHistory[]>();
@@ -126,9 +126,9 @@ export class MoodChartService {
         }
       }
 
-      this.logger.debug(
-        `Ordres des humeurs dominantes par utilisateur : ${dominantMoodOrders.length} entrées`,
-      );
+      // this.logger.debug(
+      //   `Ordres des humeurs dominantes par utilisateur : ${dominantMoodOrders.length} entrées`,
+      // );
 
       if (dominantMoodOrders.length === 0) {
         medianMood = null; // Ne rien afficher si aucune humeur n'est trouvée
@@ -140,12 +140,12 @@ export class MoodChartService {
             ? (dominantMoodOrders[mid - 1] + dominantMoodOrders[mid]) / 2
             : dominantMoodOrders[mid];
       }
-      this.logger.debug(`Médiane pondérée calculée : ${medianMood}`);
+      // this.logger.debug(`Médiane pondérée calculée : ${medianMood}`);
       await this.cacheManager.set(cacheKey, medianMood, 60 * 60 * 24); // Cache pour 24 heures
     } else {
-      this.logger.debug(
-        `Médiane pondérée récupérée du cache ('${cacheKey}') : ${medianMood}`,
-      );
+      // this.logger.debug(
+      //   `Médiane pondérée récupérée du cache ('${cacheKey}') : ${medianMood}`,
+      // );
     }
     return medianMood;
   }
@@ -154,9 +154,9 @@ export class MoodChartService {
     userId: string,
     date: Date,
   ): Promise<number> {
-    this.logger.debug(
-      `Calcul de l'humeur de l'utilisateur ['${userId}'] pour la date : ${moment(date).format('YYYY-MM-DD')}`,
-    );
+    // this.logger.debug(
+    //   `Calcul de l'humeur de l'utilisateur ['${userId}'] pour la date : ${moment(date).format('YYYY-MM-DD')}`,
+    // );
 
     const cacheKey = `user_mood_${userId}_${moment(date).format('YYYY-MM-DD')}`;
     let userMood = await this.cacheManager.get<number>(cacheKey);
@@ -176,9 +176,9 @@ export class MoodChartService {
         })
         .populate('mood');
 
-      this.logger.debug(
-        `Historique des changements d'humeurs de l'utilisateur ['${userId}'] : ${userHistory.length} entrées trouvées`,
-      );
+      // this.logger.debug(
+      //   `Historique des changements d'humeurs de l'utilisateur ['${userId}'] : ${userHistory.length} entrées trouvées`,
+      // );
 
       const dominantMood = this.calculateDominantMoodForUser(userHistory, date);
 
@@ -187,20 +187,20 @@ export class MoodChartService {
       } else {
         userMood = dominantMood;
       }
-      this.logger.debug(`Humeur de l'utilisateur calculée : ${userMood}`);
+      // this.logger.debug(`Humeur de l'utilisateur calculée : ${userMood}`);
       await this.cacheManager.set(cacheKey, userMood, 60 * 60 * 24); // Cache pour 24 heures
     } else {
-      this.logger.debug(
-        `Humeur de l'utilisateur récupérée du cache ('${cacheKey}') : ${userMood}`,
-      );
+      // this.logger.debug(
+      //   `Humeur de l'utilisateur récupérée du cache ('${cacheKey}') : ${userMood}`,
+      // );
     }
     return userMood;
   }
 
   async getMoodChartData(userId: string): Promise<MoodChartDataDto[]> {
-    this.logger.debug(
-      `Calcul de l'humeur médiane de l'utilisateur ['${userId}'] sur les 7 derniers jours`,
-    );
+    // this.logger.debug(
+    //   `Calcul de l'humeur médiane de l'utilisateur ['${userId}'] sur les 7 derniers jours`,
+    // );
     const chartData: MoodChartDataDto[] = [];
     const today = moment().startOf('day');
 
