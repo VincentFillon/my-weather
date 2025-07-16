@@ -32,6 +32,25 @@ export class RolesGuard implements CanActivate {
 
     // console.debug(req);
 
-    return requiredRoles.some((role) => req.user.role === role);
+    const hasGlobalRole = requiredRoles.some(
+      (role) => req.user.role === role,
+    );
+    if (hasGlobalRole) {
+      return true;
+    }
+
+    if (!req.user.activeGroup) {
+      return false;
+    }
+
+    const groupRole = req.user.memberships.find(
+      (m) => m.group.toString() === req.user.activeGroup.toString(),
+    )?.role;
+
+    if (!groupRole) {
+      return false;
+    }
+
+    return requiredRoles.some((role) => groupRole === role);
   }
 }

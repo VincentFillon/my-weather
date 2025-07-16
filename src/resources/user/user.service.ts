@@ -4,6 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { hash } from 'bcrypt';
 import { Model } from 'mongoose';
 import { Role } from 'src/resources/auth/enums/role.enum';
+import {
+  GroupMembership,
+  GroupMembershipDocument,
+} from 'src/resources/group/entities/group-membership.entity';
 import { User, UserDocument } from 'src/resources/user/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FullUpdateUserDto } from './dto/full-update-user.dto';
@@ -12,6 +16,8 @@ import { FullUpdateUserDto } from './dto/full-update-user.dto';
 export class UserService implements OnModuleInit {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(GroupMembership.name)
+    private groupMembershipModel: Model<GroupMembershipDocument>,
     private eventEmitter: EventEmitter2,
   ) {}
 
@@ -37,27 +43,46 @@ export class UserService implements OnModuleInit {
     return user.save();
   }
 
-  findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().populate('mood').exec();
+  async findAll(groupId: string): Promise<UserDocument[]> {
+    const memberships = await this.groupMembershipModel.find({ group: groupId }).exec();
+    const userIds = memberships.map((m) => m.user);
+    return this.userModel
+      .find({ _id: { $in: userIds } })
+      .populate('mood')
+      .populate('memberships')
+      .exec();
   }
 
   findOne(id: string): Promise<UserDocument> {
-    return this.userModel.findById(id).populate('mood').exec();
+    return this.userModel
+      .findById(id)
+      .populate('mood')
+      .populate('memberships')
+      .exec();
   }
 
   findMany(ids: string[]): Promise<UserDocument[]> {
     return this.userModel
       .find({ _id: { $in: ids } })
       .populate('mood')
+      .populate('memberships')
       .exec();
   }
 
   findByUsername(username: string): Promise<UserDocument> {
-    return this.userModel.findOne({ username }).populate('mood').exec();
+    return this.userModel
+      .findOne({ username })
+      .populate('mood')
+      .populate('memberships')
+      .exec();
   }
 
   findByDisplayName(displayName: string): Promise<UserDocument> {
-    return this.userModel.findOne({ displayName }).populate('mood').exec();
+    return this.userModel
+      .findOne({ displayName })
+      .populate('mood')
+      .populate('memberships')
+      .exec();
   }
 
   findByMood(moodId: string): Promise<UserDocument[]> {

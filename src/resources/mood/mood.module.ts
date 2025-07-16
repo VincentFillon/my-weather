@@ -5,6 +5,7 @@ import { AuthModule } from 'src/resources/auth/auth.module';
 import { Mood, MoodSchema } from 'src/resources/mood/entities/mood.entity';
 import { UserModule } from 'src/resources/user/user.module';
 import { MoodExistsValidator } from 'src/validators/mood-exists.validator';
+import { MoodController } from './mood.controller';
 import { MoodGateway } from './mood.gateway';
 import { MoodService } from './mood.service';
 
@@ -18,6 +19,7 @@ import { MoodService } from './mood.service';
     UserModule,
     forwardRef(() => AuthModule),
   ],
+  controllers: [MoodController],
   providers: [MoodGateway, MoodService, MoodExistsValidator],
   exports: [MoodService, MoodExistsValidator],
 })

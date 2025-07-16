@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import mongoose, { HydratedDocument, Types } from 'mongoose';
+import { Group } from 'src/resources/group/entities/group.entity';
 
 export type MoodDocument = HydratedDocument<Mood>;
 
@@ -24,6 +25,9 @@ export class Mood {
 
   @Prop()
   backgroundImg?: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true })
+  group: Group;
 
   @Prop()
   createdAt?: Date;

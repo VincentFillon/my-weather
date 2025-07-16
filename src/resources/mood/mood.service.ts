@@ -21,8 +21,8 @@ export class MoodService {
     return mood.save();
   }
 
-  findAll(): Promise<MoodDocument[]> {
-    return this.moodModel.find().exec();
+  findAll(groupId: string): Promise<MoodDocument[]> {
+    return this.moodModel.find({ group: groupId }).exec();
   }
 
   findOne(id: string): Promise<MoodDocument> {
