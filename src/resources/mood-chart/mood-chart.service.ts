@@ -197,14 +197,14 @@ export class MoodChartService {
     return userMood;
   }
 
-  async getMoodChartData(userId: string): Promise<MoodChartDataDto[]> {
+  async getMoodChartData(userId: string, days: number = 7): Promise<MoodChartDataDto[]> {
     // this.logger.debug(
-    //   `Calcul de l'humeur médiane de l'utilisateur ['${userId}'] sur les 7 derniers jours`,
+    //   `Calcul de l'humeur médiane de l'utilisateur ['${userId}'] sur les ${days} derniers jours`,
     // );
     const chartData: MoodChartDataDto[] = [];
     const today = moment().startOf('day');
 
-    for (let i = 6; i >= 0; i--) {
+    for (let i = (days - 1); i >= 0; i--) {
       const date = today.clone().subtract(i, 'days').toDate();
       const userMoodOrder = await this.getUserMoodForDate(userId, date);
       let medianMoodOrder = await this.calculateMedianMoodForDate(date);
