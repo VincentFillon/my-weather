@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument, Types } from 'mongoose';
+import { Mood } from 'src/resources/mood/entities/mood.entity';
 import { User } from '../../user/entities/user.entity';
 import { GroupRole } from '../enums/group-role.enum';
 import { Group } from './group.entity';
@@ -18,6 +19,9 @@ export class GroupMembership {
 
   @Prop({ required: true, enum: GroupRole, default: GroupRole.USER })
   role: GroupRole = GroupRole.USER;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Mood' })
+  mood: Mood | null = null;
 
   @Prop()
   createdAt?: Date;

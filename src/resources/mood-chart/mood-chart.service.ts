@@ -17,11 +17,13 @@ export class MoodChartService {
   ) {}
 
   private async getAllUserMoodsForDateRange(
+    groupId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<UserHistory[]> {
     return this.userHistoryModel
       .find({
+        group: groupId,
         createdAt: { $gte: startDate, $lte: endDate },
       })
       .populate('user')
@@ -83,12 +85,15 @@ export class MoodChartService {
     return dominantMoodOrder;
   }
 
-  private async calculateMedianMoodForDate(date: Date): Promise<number> {
+  private async calculateMedianMoodForDate(
+    groupId: string,
+    date: Date,
+  ): Promise<number> {
     // this.logger.debug(
     //   `Calcul de l'humeur médiane pondérée pour la date : ${moment(date).format('YYYY-MM-DD')}`,
     // );
 
-    const cacheKey = `median_mood_weighted_${moment(date).format('YYYY-MM-DD')}`;
+    const cacheKey = `median_mood_weighted_${groupId}_${moment(date).format('YYYY-MM-DD')}`;
     let medianMood = await this.cacheManager.get<number>(cacheKey);
 
     if (moment(date).isSame(moment(), 'day')) {
@@ -100,6 +105,7 @@ export class MoodChartService {
       const endOfDay = moment(date).endOf('day').toDate();
 
       const allUserHistories = await this.getAllUserMoodsForDateRange(
+        groupId,
         startOfDay,
         endOfDay,
       );
@@ -152,13 +158,14 @@ export class MoodChartService {
 
   private async getUserMoodForDate(
     userId: string,
+    groupId: string,
     date: Date,
   ): Promise<number> {
     // this.logger.debug(
     //   `Calcul de l'humeur de l'utilisateur ['${userId}'] pour la date : ${moment(date).format('YYYY-MM-DD')}`,
     // );
 
-    const cacheKey = `user_mood_${userId}_${moment(date).format('YYYY-MM-DD')}`;
+    const cacheKey = `user_mood_${userId}_${groupId}_${moment(date).format('YYYY-MM-DD')}`;
     let userMood = await this.cacheManager.get<number>(cacheKey);
 
     if (moment(date).isSame(moment(), 'day')) {
@@ -172,6 +179,7 @@ export class MoodChartService {
       const userHistory = await this.userHistoryModel
         .find({
           user: new Types.ObjectId(userId),
+          group: new Types.ObjectId(groupId),
           createdAt: { $gte: startOfDay, $lte: endOfDay },
         })
         .populate('mood');
@@ -197,17 +205,21 @@ export class MoodChartService {
     return userMood;
   }
 
-  async getMoodChartData(userId: string, days: number = 7): Promise<MoodChartDataDto[]> {
+  async getMoodChartData(
+    userId: string,
+    groupId: string,
+    days: number = 7,
+  ): Promise<MoodChartDataDto[]> {
     // this.logger.debug(
     //   `Calcul de l'humeur médiane de l'utilisateur ['${userId}'] sur les ${days} derniers jours`,
     // );
     const chartData: MoodChartDataDto[] = [];
     const today = moment().startOf('day');
 
-    for (let i = (days - 1); i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const date = today.clone().subtract(i, 'days').toDate();
-      const userMoodOrder = await this.getUserMoodForDate(userId, date);
-      let medianMoodOrder = await this.calculateMedianMoodForDate(date);
+      const userMoodOrder = await this.getUserMoodForDate(userId, groupId, date);
+      const medianMoodOrder = await this.calculateMedianMoodForDate(groupId, date);
 
       chartData.push({
         date: moment(date).format('YYYY-MM-DD'),

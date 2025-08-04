@@ -8,9 +8,10 @@ import {
   GroupMembership,
   GroupMembershipDocument,
 } from 'src/resources/group/entities/group-membership.entity';
+import { GroupDocument } from 'src/resources/group/entities/group.entity';
 import { User, UserDocument } from 'src/resources/user/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { FullUpdateUserDto } from './dto/full-update-user.dto';
+import { FullUpdateUserDto } from './dto/full-update-user.dto'; // Note: Ce DTO ne devrait plus contenir 'mood'.
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -48,45 +49,60 @@ export class UserService implements OnModuleInit {
     const userIds = memberships.map((m) => m.user);
     return this.userModel
       .find({ _id: { $in: userIds } })
-      .populate('mood')
-      .populate('memberships')
+      .populate({
+        path: 'memberships',
+        match: { group: groupId },
+        populate: {
+          path: 'mood',
+        },
+      })
       .exec();
   }
 
   findOne(id: string): Promise<UserDocument> {
     return this.userModel
       .findById(id)
-      .populate('mood')
-      .populate('memberships')
+      .populate({
+        path: 'memberships',
+        populate: [{ path: 'mood' }, { path: 'group' }],
+      })
       .exec();
   }
 
   findMany(ids: string[]): Promise<UserDocument[]> {
     return this.userModel
       .find({ _id: { $in: ids } })
-      .populate('mood')
-      .populate('memberships')
+      .populate({
+        path: 'memberships',
+        populate: {
+          path: 'mood',
+        },
+      })
       .exec();
   }
 
   findByUsername(username: string): Promise<UserDocument> {
     return this.userModel
       .findOne({ username })
-      .populate('mood')
-      .populate('memberships')
+      .populate({
+        path: 'memberships',
+        populate: {
+          path: 'mood',
+        },
+      })
       .exec();
   }
 
   findByDisplayName(displayName: string): Promise<UserDocument> {
     return this.userModel
       .findOne({ displayName })
-      .populate('mood')
-      .populate('memberships')
+      .populate({
+        path: 'memberships',
+        populate: {
+          path: 'mood',
+        },
+      })
       .exec();
-  }
-
-  findByMood(moodId: string): Promise<UserDocument[]> {
-    return this.userModel.find({ mood: moodId }).populate('mood').exec();
   }
 
   async update(
@@ -94,11 +110,12 @@ export class UserService implements OnModuleInit {
     updateUserDto: FullUpdateUserDto,
     fromUser?: User,
   ): Promise<UserDocument> {
-    const previousUser = await this.findOne(id);
+    const userToUpdate = await this.userModel.findById(id).exec();
 
     // Si un utilisateur non admin essaye de modifier le rôle de son utilisateur ou d'un autre utilisateur : bloquer la requête
     if (
-      previousUser.role !== updateUserDto.role &&
+      updateUserDto.role &&
+      userToUpdate.role !== updateUserDto.role &&
       updateUserDto.role === Role.ADMIN &&
       (!fromUser || fromUser.role !== Role.ADMIN)
     ) {
@@ -113,12 +130,44 @@ export class UserService implements OnModuleInit {
 
     // Mettre à jour l'utilisateur
     await this.userModel.findByIdAndUpdate(id, updateUserDto).exec();
-    const updatedUser = await this.findOne(id);
-    // console.debug(updatedUser);
+    return this.findOne(id);
+  }
 
-    if (previousUser.mood?._id !== updatedUser.mood?._id) {
-      this.eventEmitter.emit('user.mood.updated', updatedUser, fromUser);
+  async updateMood(
+    userId: string,
+    groupId: string,
+    moodId: string,
+    fromUser?: User,
+  ): Promise<UserDocument> {
+    const membership = await this.groupMembershipModel
+      .findOne({
+        user: userId,
+        group: groupId,
+      })
+      .populate('group')
+      .exec();
+
+    if (!membership) {
+      throw new ForbiddenException('User is not a member of this group.');
     }
+
+    const previousMoodId = membership.mood;
+
+    if (previousMoodId?.toString() === moodId) {
+      return this.findOne(userId);
+    }
+
+    await this.groupMembershipModel
+      .updateOne({ _id: membership._id }, { $set: { mood: moodId } })
+      .exec();
+
+    const updatedUser = await this.findOne(userId);
+
+    this.eventEmitter.emit('user.mood.updated', {
+      user: updatedUser,
+      group: membership.group as GroupDocument,
+      fromUser,
+    });
 
     return updatedUser;
   }
@@ -126,8 +175,8 @@ export class UserService implements OnModuleInit {
   async remove(id: string): Promise<UserDocument> {
     const user = await this.userModel
       .findByIdAndDelete(id)
-      .populate('mood')
       .exec();
+    await this.groupMembershipModel.deleteMany({ user: id }).exec();
     this.eventEmitter.emit('user.removed', id);
     return user;
   }
