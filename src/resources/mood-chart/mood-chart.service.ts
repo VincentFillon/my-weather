@@ -135,10 +135,11 @@ export class MoodChartService {
       } else {
         dominantMoodOrders.sort((a, b) => a - b);
         const mid = Math.floor(dominantMoodOrders.length / 2);
-        medianMood =
+        const median =
           dominantMoodOrders.length % 2 === 0
             ? (dominantMoodOrders[mid - 1] + dominantMoodOrders[mid]) / 2
             : dominantMoodOrders[mid];
+        medianMood = Math.ceil(median);
       }
       // this.logger.debug(`Médiane pondérée calculée : ${medianMood}`);
       await this.cacheManager.set(cacheKey, medianMood, 60 * 60 * 24); // Cache pour 24 heures
