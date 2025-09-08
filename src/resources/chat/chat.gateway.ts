@@ -27,6 +27,7 @@ import { MarkAsReadDto } from 'src/resources/chat/dto/mark-as-read.dto';
 import { MessageReactionDto } from 'src/resources/chat/dto/message-reaction.dto';
 import { SendMessageDto } from 'src/resources/chat/dto/send-message.dto';
 import { UpdateRoomDto } from 'src/resources/chat/dto/update-room.dto';
+import { RoomDocument } from 'src/resources/chat/entities/room.entity';
 
 @ApiTags('Chat WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -243,18 +244,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const rooms = await this.chatService.findByUser(currentUser.sub);
 
-    for (let room of rooms) {
-      room.lastMessage = await this.chatService.findLastMessageByRoom(
-        room._id.toString(),
-      );
-      room.unreadCount = await this.chatService.countUnreadMessagesByRoom(
-        room._id.toString(),
-        currentUser.sub,
-      );
-    }
+    const enrichedRooms = await Promise.all(
+      rooms.map(async (room: RoomDocument) => {
+        const [lastMessage, unreadCount] = await Promise.all([
+          this.chatService.findLastMessageByRoom(room._id.toString()),
+          this.chatService.countUnreadMessagesByRoom(room._id.toString(), currentUser.sub),
+        ]);
+        return {
+          ...room.toObject(),
+          lastMessage: lastMessage ?? null,
+          unreadCount: unreadCount ?? 0,
+        };
+      }),
+    );
 
-    this.server.to(`user_${currentUser.sub}`).emit('myRoomsList', rooms);
-    return rooms;
+    this.server.to(`user_${currentUser.sub}`).emit('myRoomsList', enrichedRooms);
+    return enrichedRooms;
   }
 
   @SubscribeMessage('markAsRead')

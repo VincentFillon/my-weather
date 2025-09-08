@@ -90,4 +90,13 @@ export class DailyHuntGateway {
       });
     }
   }
+
+  @SubscribeMessage('getLeaderboard')
+  async getLeaderboard(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { period: string },
+  ) {
+    const leaderboardData = await this.dailyHuntService.getLeaderboardData(data.period);
+    client.emit('leaderboard', leaderboardData);
+  }
 }
