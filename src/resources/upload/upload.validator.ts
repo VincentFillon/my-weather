@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { FileTypeResult, fromBuffer } from 'file-type';
+import { FileTypeParser, FileTypeResult } from 'file-type';
 import { extname } from 'path';
 
 export class UploadValidator {
@@ -57,9 +57,10 @@ export class UploadValidator {
     }
 
     // Vérifier le contenu réel du fichier
+    const fileTypeParser = new FileTypeParser();
     let fileTypeResult: FileTypeResult | undefined;
     try {
-      fileTypeResult = await fromBuffer(file.buffer);
+      fileTypeResult = await fileTypeParser.fromBuffer(file.buffer);
     } catch (error) {
       throw new BadRequestException('Could not determine file type');
     }
