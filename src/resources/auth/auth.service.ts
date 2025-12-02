@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { compare, hash } from 'bcrypt';
 import { LoginResponse } from 'src/resources/auth/dto/login.response';
 import { UserService } from 'src/resources/user/user.service';
@@ -18,6 +19,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async validateUser(loginDto: LoginDto): Promise<LoginResponse | null> {
@@ -70,6 +72,8 @@ export class AuthService {
       secret: process.env.JWT_SECRET,
       expiresIn: `${expiresIn}s`,
     });
+
+    this.eventEmitter.emit('user.login', user);
 
     return {
       user,
