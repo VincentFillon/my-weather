@@ -17,6 +17,8 @@ import { User } from 'src/resources/user/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
+import { CreateFrameDto } from './dto/create-frame.dto';
+import { UpdateFrameDto } from './dto/update-frame.dto';
 
 @ApiTags('User WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -138,5 +140,73 @@ export class UserGateway {
     const deletedUser = await this.userService.remove(id);
     this.server.emit('userRemoved', id);
     return deletedUser;
+  }
+
+  @SubscribeMessage('selectFrame')
+  @ApiOperation({
+    summary: 'Sélectionner un cadre',
+    description: 'Permet à un utilisateur de sélectionner un cadre pour son avatar',
+  })
+  async selectFrame(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() frameId: string,
+  ) {
+    const user = (socket as any).user;
+    const updatedUser = await this.userService.selectFrame(user.sub, frameId);
+    this.server.emit('userFrameSelected', updatedUser);
+    return updatedUser;
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  @SubscribeMessage('createFrame')
+  @ApiOperation({
+    summary: 'Créer un cadre',
+    description: 'Permet à un administrateur de créer un cadre',
+  })
+  async createFrame(@MessageBody() createFrameDto: CreateFrameDto) {
+    const frame = await this.userService.createFrame(createFrameDto);
+    this.server.emit('frameCreated', frame);
+    return frame;
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  @SubscribeMessage('updateFrame')
+  @ApiOperation({
+    summary: 'Mettre à jour un cadre',
+    description: 'Permet à un administrateur de mettre à jour un cadre',
+  })
+  async updateFrame(@MessageBody() updateFrameDto: UpdateFrameDto) {
+    const frame = await this.userService.updateFrame(
+      updateFrameDto._id,
+      updateFrameDto,
+    );
+    this.server.emit('frameUpdated', frame);
+    return frame;
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  @SubscribeMessage('deleteFrame')
+  @ApiOperation({
+    summary: 'Supprimer un cadre',
+    description: 'Permet à un administrateur de supprimer un cadre',
+  })
+  async deleteFrame(@MessageBody() id: string) {
+    const frame = await this.userService.deleteFrame(id);
+    this.server.emit('frameDeleted', id);
+    return frame;
+  }
+
+  @SubscribeMessage('findAllFrames')
+  @ApiOperation({
+    summary: 'Récupérer tous les cadres',
+    description: 'Retourne la liste de tous les cadres',
+  })
+  async findAllFrames() {
+    const frames = await this.userService.getAllFrames();
+    this.server.emit('framesFound', frames);
+    return frames;
   }
 }

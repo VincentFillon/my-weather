@@ -85,7 +85,11 @@ export class ChatService {
       .find(query)
       .sort({ createdAt: -1 }) // Trier par date décroissante (plus récent en premier)
       .limit(limit) // Appliquer la limite
-      .populate('sender', 'displayName image _id') // Peupler l'expéditeur
+      .populate({
+        path: 'sender',
+        select: 'displayName image _id selectedFrame',
+        populate: { path: 'selectedFrame' },
+      }) // Peupler l'expéditeur
       .exec();
 
     // Note: On renvoie les messages du plus récent au plus ancien (dans la page chargée)
@@ -115,14 +119,20 @@ export class ChatService {
   async findMessagesByRoom(roomId: string): Promise<Message[]> {
     return this.messageModel
       .find({ room: new Types.ObjectId(roomId) })
-      .populate('sender')
+      .populate({
+        path: 'sender',
+        populate: { path: 'selectedFrame' },
+      })
       .exec();
   }
 
   async findLastMessageByRoom(roomId: string): Promise<Message> {
     return this.messageModel
       .findOne({ room: new Types.ObjectId(roomId) })
-      .populate('sender')
+      .populate({
+        path: 'sender',
+        populate: { path: 'selectedFrame' },
+      })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -186,7 +196,13 @@ export class ChatService {
   async sendMessage(sendMessageDto: SendMessageDto): Promise<Message> {
     const message = new this.messageModel(sendMessageDto);
     await message.save();
-    return this.messageModel.findById(message._id).populate('sender').exec();
+    return this.messageModel
+      .findById(message._id)
+      .populate({
+        path: 'sender',
+        populate: { path: 'selectedFrame' },
+      })
+      .exec();
   }
   /**
    * Ajoute une réaction emoji à un message.
@@ -217,7 +233,13 @@ export class ChatService {
     }
     message.markModified('reactions');
     await message.save();
-    return this.messageModel.findById(messageId).populate('sender').exec();
+    return this.messageModel
+      .findById(messageId)
+      .populate({
+        path: 'sender',
+        populate: { path: 'selectedFrame' },
+      })
+      .exec();
   }
 
   /**
@@ -250,7 +272,13 @@ export class ChatService {
         await message.save();
       }
     }
-    return this.messageModel.findById(messageId).populate('sender').exec();
+    return this.messageModel
+      .findById(messageId)
+      .populate({
+        path: 'sender',
+        populate: { path: 'selectedFrame' },
+      })
+      .exec();
   }
 
   async updateRoom(updateRoomDto: UpdateRoomDto): Promise<Room> {

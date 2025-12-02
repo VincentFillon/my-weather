@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument, Types } from 'mongoose';
 import { Role } from 'src/resources/auth/enums/role.enum';
 import { Mood } from '../../mood/entities/mood.entity';
+import { Frame } from './frame.entity';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -26,6 +27,12 @@ export class User {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Mood' })
   mood: Mood | null = null;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Frame' }] })
+  frames: Frame[] = [];
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Frame' })
+  selectedFrame: Frame | null = null;
 
   @Prop()
   moodUpdatedAt?: Date;
