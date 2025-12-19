@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from 'src/resources/auth/auth.module';
+import { NotificationModule } from '../notification/notification.module';
 import {
   TicTacToePlayerGames,
   TicTacToePlayerGamesSchema,
@@ -32,6 +33,7 @@ import { TicTacToeService } from './tic-tac-toe.service';
     }),
     UserModule,
     forwardRef(() => AuthModule),
+    NotificationModule,
   ],
   providers: [TicTacToeGateway, TicTacToeService, UserExistsValidator],
 })

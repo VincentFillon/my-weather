@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from 'src/resources/auth/auth.module';
+import { NotificationModule } from '../notification/notification.module';
 import {
   PongPlayerGames,
   PongPlayerGamesSchema,
@@ -29,6 +30,7 @@ import { PongService } from './pong.service';
     }),
     UserModule,
     forwardRef(() => AuthModule),
+    NotificationModule,
   ],
   providers: [PongGateway, PongService, UserExistsValidator],
 })

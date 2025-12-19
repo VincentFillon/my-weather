@@ -27,6 +27,7 @@ import { TicTacToeModule } from 'src/resources/tic-tac-toe/tic-tac-toe.module';
 import { UploadModule } from 'src/resources/upload/upload.module';
 import { UserHistoryModule } from 'src/resources/user-history/user-history.module';
 import { UserModule } from 'src/resources/user/user.module';
+import { NotificationModule } from 'src/resources/notification/notification.module';
 import { TasksService } from 'src/tasks/tasks.service';
 
 @Module({
@@ -60,6 +61,7 @@ import { TasksService } from 'src/tasks/tasks.service';
     TenorModule,
     MoodChartModule,
     DailyHuntModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

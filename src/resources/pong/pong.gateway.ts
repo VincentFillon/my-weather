@@ -28,6 +28,7 @@ import {
   saveInterval,
   updateBallPosition,
 } from 'src/resources/pong/pong.utils';
+import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('Pong WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -46,6 +47,7 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly pongService: PongService,
     private readonly jwtService: JwtService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -108,6 +110,22 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
       this.server.emit('pongCreated', pong);
 
+      const opponentId = currentUser.sub === pong.player1._id.toString()
+        ? pong.player2?._id.toString()
+        : pong.player1._id.toString();
+
+      if (opponentId) {
+        const payload = {
+          notification: {
+            title: "Pong",
+            body: `${currentUser.displayName || 'Un joueur'} a démarré une partie de pong avec vous`,
+            icon: 'assets/icons/icon-192x192.png',
+            data: { url: `/games/pong/${pong._id}` }
+          }
+        };
+        this.notificationService.sendNotificationToUser(opponentId, payload);
+      }
+
       return pong;
     }
 
@@ -136,6 +154,22 @@ export class PongGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Si on ne trouve pas la socket de l'adversaire, on notifie de la création de la partie à tout le monde
     else {
       this.server.emit('pongCreated', pong);
+
+      const opponentId = pong.player1._id.toString() === currentUser.sub
+        ? pong.player2?._id.toString()
+        : pong.player1._id.toString();
+
+      if (opponentId) {
+        const payload = {
+            notification: {
+              title: "Pong",
+              body: `${currentUser.displayName || 'Un joueur'} a démarré une partie de pong avec vous`,
+              icon: 'assets/icons/icon-192x192.png',
+              data: { url: `/games/pong/${pong._id}` }
+            }
+          };
+        this.notificationService.sendNotificationToUser(opponentId, payload);
+      }
     }
 
     // On notifie les joueurs de la room de la création de la partie

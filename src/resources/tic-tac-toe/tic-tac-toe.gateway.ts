@@ -20,6 +20,7 @@ import { FindTicTacToeByUserDto } from 'src/resources/tic-tac-toe/dto/find-tic-t
 import { UpdateTicTacToeDto } from 'src/resources/tic-tac-toe/dto/update-tic-tac-toe.dto';
 import { CreateTicTacToeDto } from './dto/create-tic-tac-toe.dto';
 import { TicTacToeService } from './tic-tac-toe.service';
+import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('TicTacToe WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -37,6 +38,7 @@ export class TicTacToeGateway
   constructor(
     private readonly ticTacToeService: TicTacToeService,
     private readonly jwtService: JwtService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async handleConnection(socket: Socket) {
@@ -90,6 +92,22 @@ export class TicTacToeGateway
         currentUser.sub !== ticTacToe.playerO._id.toString())
     ) {
       this.server.emit('ticTacToeCreated', ticTacToe);
+      
+      const opponentId = currentUser.sub === ticTacToe.playerX._id.toString() 
+        ? ticTacToe.playerO?._id.toString() 
+        : ticTacToe.playerX._id.toString();
+
+      if (opponentId) {
+        const payload = {
+          notification: {
+            title: "Morpion",
+            body: `${currentUser.displayName || 'Un joueur'} a démarré une partie de morpion avec vous`,
+            icon: 'assets/icons/icon-192x192.png',
+            data: { url: `/games/tic-tac-toe/${ticTacToe._id}` }
+          }
+        };
+        this.notificationService.sendNotificationToUser(opponentId, payload);
+      }
 
       return ticTacToe;
     }
@@ -123,6 +141,22 @@ export class TicTacToeGateway
     // Si on ne trouve pas la socket de l'adversaire, on notifie de la création de la partie à tout le monde
     else {
       this.server.emit('ticTacToeCreated', ticTacToe);
+
+      const opponentId = ticTacToe.playerX._id.toString() === currentUser.sub
+        ? ticTacToe.playerO?._id.toString()
+        : ticTacToe.playerX._id.toString();
+        
+      if (opponentId) {
+        const payload = {
+            notification: {
+              title: "Morpion",
+              body: `${currentUser.displayName || 'Un joueur'} a démarré une partie de morpion avec vous`,
+              icon: 'assets/icons/icon-192x192.png',
+              data: { url: `/games/tic-tac-toe/${ticTacToe._id}` }
+            }
+          };
+        this.notificationService.sendNotificationToUser(opponentId, payload);
+      }
     }
 
     // On notifie les joueurs de la room de la création de la partie

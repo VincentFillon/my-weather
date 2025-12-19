@@ -19,6 +19,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
 import { CreateFrameDto } from './dto/create-frame.dto';
 import { UpdateFrameDto } from './dto/update-frame.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('User WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -27,7 +28,10 @@ export class UserGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
@@ -123,6 +127,18 @@ export class UserGateway {
       currentUserEntity,
     );
     this.server.emit('userMoodUpdated', updatedUser);
+
+    // Send Push Notification
+    const payload = {
+      notification: {
+        title: "Changement d'humeur",
+        body: `${updatedUser.displayName} est maintenant dans ${updatedUser.mood?.name || 'la zone neutre'}`,
+        icon: updatedUser.mood?.image || 'assets/icons/icon-192x192.png',
+        data: { url: '/board' }
+      }
+    };
+    this.notificationService.sendNotificationToAll(payload, updatedUser._id.toString());
+
     return updatedUser;
   }
 
