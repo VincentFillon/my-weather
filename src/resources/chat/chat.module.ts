@@ -14,6 +14,7 @@ import {
 } from 'src/resources/chat/entities/read-status.entity';
 import { Room, RoomSchema } from 'src/resources/chat/entities/room.entity';
 import { UserModule } from 'src/resources/user/user.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UserModule } from 'src/resources/user/user.module';
       signOptions: { expiresIn: '12h' },
     }),
     UserModule,
+    NotificationModule,
   ],
   providers: [ChatGateway, ChatService],
   exports: [ChatService],

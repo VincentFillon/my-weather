@@ -28,6 +28,7 @@ import { MessageReactionDto } from 'src/resources/chat/dto/message-reaction.dto'
 import { SendMessageDto } from 'src/resources/chat/dto/send-message.dto';
 import { UpdateRoomDto } from 'src/resources/chat/dto/update-room.dto';
 import { RoomDocument } from 'src/resources/chat/entities/room.entity';
+import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('Chat WebSocket')
 @UseGuards(JwtAuthGuard)
@@ -40,6 +41,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -338,9 +340,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (userIdStr !== currentUser.sub) {
         // Ne pas notifier l'envoyeur
         this.server.to(`user_${userIdStr}`).emit('newMessageNotification', {
-          roomId,
-          message,
+            roomId,
+            message,
         });
+
+        // Send Push Notification
+        const senderName = message.sender ? message.sender.displayName : 'Quelqu\'un';
+        const notificationTitle = room.users.length > 2 ? `${senderName} (dans ${room.name})` : senderName;
+
+        const payload = {
+            notification: {
+                title: notificationTitle,
+                body: message.content || 'A envoyé un média',
+                icon: (message.sender && message.sender.image) ? message.sender.image : 'assets/icons/icon-192x192.png',
+                data: { url: `/chat/${roomId}` }
+            }
+        };
+        this.notificationService.sendNotificationToUser(userIdStr, payload);
       }
     });
 
@@ -385,6 +401,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       roomId,
       message,
     });
+
+    // Send Push Notification
+    const pushPayload = {
+        notification: {
+            title: payload.botName,
+            body: payload.content,
+            icon: 'assets/bot-avatar.png',
+            data: { url: `/chat/${roomId}` }
+        }
+    };
+    this.notificationService.sendNotificationToUser(payload.to, pushPayload);
   }
 
   @SubscribeMessage('addReaction')
