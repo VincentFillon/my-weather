@@ -4,14 +4,24 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
-import { NotificationSubscription, NotificationSubscriptionSchema } from './schemas/notification-subscription.schema';
+import {
+  NotificationSubscription,
+  NotificationSubscriptionSchema,
+} from './schemas/notification-subscription.schema';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: NotificationSubscription.name, schema: NotificationSubscriptionSchema }]),
+    ConfigModule,
+    MongooseModule.forFeature([
+      {
+        name: NotificationSubscription.name,
+        schema: NotificationSubscriptionSchema,
+      },
+    ]),
     JwtModule.register({
-        secret: process.env.JWT_SECRET,
-        signOptions: { expiresIn: '12h' },
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '12h' },
     }),
     forwardRef(() => AuthModule),
   ],
